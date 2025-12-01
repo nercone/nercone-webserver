@@ -1,3 +1,4 @@
+import json
 import uuid
 import uvicorn
 from enum import Enum
@@ -7,7 +8,7 @@ from nercone_modern.color import ModernColor
 from nercone_modern.logging import ModernLogging
 from fastapi import FastAPI, Request, Response
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse, RedirectResponse
 from jinja2.exceptions import TemplateNotFound
 
 app = FastAPI()
@@ -56,7 +57,10 @@ async def middleware(request: Request, call_next):
         exception = e
         response = PlainTextResponse("Internal Server Error", status_code=500)
     response.headers["Server"] = "Nercone Web Server"
-    with Path(__file__).parent.joinpath("logs", "access", f"{access_id}.txt").open("w") as f:
+    access_log_dir = Path(__file__).parent.joinpath("logs", "access")
+    if not access_log_dir.exists():
+        access_log_dir.mkdir(parents=True, exist_ok=True)
+    with access_log_dir.joinpath(f"{access_id}.txt").open("w") as f:
         f.write(f"----- RESPONSE -----\n")
         f.write(f"CODE: {response.status_code}\n")
         f.write(f"CHAR: {response.charset}\n")
@@ -86,7 +90,7 @@ async def middleware(request: Request, call_next):
             f.write(str(exception))
             f.write("\n")
     status_code_color = "blue"
-    if response.status_code == 200:
+    if response.status_code == 200 or response.status_code == 307:
         status_code_color = "green"
     elif response.status_code == 400:
         status_code_color = "yellow"
@@ -98,6 +102,39 @@ async def middleware(request: Request, call_next):
         status_code_color = "red"
     logger.log(f"{ModernColor.color(status_code_color)}{response.status_code}{ModernColor.color('reset')} {access_id} FROM {request.client.host} ORGN {origin_client_host} USING {request.state.client_type}")
     return response
+
+@app.get("/to/{url_id}")
+async def short_url(request: Request, url_id: str):
+    json_path = Path(__file__).parent / "shorturls.json"
+    if not json_path.exists():
+        return PlainTextResponse("Short URL configuration file not found.", status_code=500)
+    try:
+        with json_path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return PlainTextResponse("Failed to load Short URL configuration.", status_code=500)
+    current_id = url_id
+    visited = set()
+    for _ in range(10):
+        if current_id in visited:
+            return PlainTextResponse("Circular alias detected.", status_code=500)
+        visited.add(current_id)
+        if current_id not in data:
+            break
+        entry = data[current_id]
+        entry_type = entry.get("type")
+        content = entry.get("content")
+        if entry_type == "redirect":
+            return RedirectResponse(url=content)
+        elif entry_type == "alias":
+            current_id = content
+        else:
+            break
+    return templates.TemplateResponse(
+        status_code=404,
+        request=request,
+        name="404.html"
+    )
 
 @app.get("/{full_path:path}")
 async def default_response(request: Request, full_path: str) -> Response:

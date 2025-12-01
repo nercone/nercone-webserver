@@ -1,0 +1,11 @@
+{
+  "home": { "type": "redirect", "content": "https://www.diamondgotcat.net/" },
+  "github": { "type": "redirect", "content": "https://github.com/DiamondGotCat/" },
+  "ypsh": { "type": "redirect", "content": "https://ypsh.diamondgotcat.net/" },
+  "ypsh-dl": { "type": "redirect", "content": "https://ypsh.diamondgotcat.net/download/" },
+  "ypsh-docs": { "type": "redirect", "content": "https://ypsh.diamondgotcat.net/docs/" },
+  "x": { "type": "redirect", "content": "https://x.com/DiamondGotCat/" },
+  "twitter": { "type": "alias", "content": "x" },
+  "never-gonna-give-you-up": { "type": "redirect", "content": "https://youtu.be/dQw4w9WgXcQ?si=MTA8bPNsSyrYypED" },
+  "special-link": { "type": "alias", "content": "never-gonna-give-you-up" }
+}
