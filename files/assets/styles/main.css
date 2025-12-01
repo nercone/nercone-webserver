@@ -1,0 +1,117 @@
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@100..700&family=M+PLUS+2:wght@100..900&display=swap');
+@font-face {
+    font-family: 'SF Pro';
+    font-style: normal;
+    font-weight: normal;
+    src: local('SF Pro'), url('/assets/fonts/sf-pro/SF-Pro.ttf') format('ttf');
+}
+@font-face {
+    font-family: 'SF Pro Display Bold';
+    font-style: normal;
+    font-weight: normal;
+    src: local('SF Pro Display Bold'), url('/assets/fonts/sf-pro/SF-Pro-Display-Bold.otf') format('otf');
+}
+@font-face {
+    font-family: 'SF Mono Regular';
+    font-style: normal;
+    font-weight: normal;
+    src: local('SF Mono Regular'), url('/assets/fonts/sf-pro/SF-Mono-Regular.otf') format('otf');
+}
+html {
+    color: oklch(80% 0 0);
+    background-color: #1e1e1e;
+    line-height: 1;
+    margin: 0;
+    font-family: "SF Pro", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+}
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+main {
+    padding: 24px;
+    padding-top: 4px;
+    padding-bottom: 70px;
+    flex: 1;
+}
+footer {
+    background-color: #000;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+section {
+    padding-top: 8px;
+}
+a {
+    text-decoration: none;
+    color: inherit;
+}
+h1, h2 {
+    color: #ffffff;
+    font-family: "SF Pro Display Bold", sans-serif;
+    font-optical-sizing: auto;
+}
+h3, h4, h5, h6 {
+    color: #ffffff;
+}
+pre {
+    background-color: #000000;
+    padding: 10px;
+    padding-left: 20px;
+    border-radius: 5px;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 32px;
+    font-family: "SF Mono Regular", monospace;
+    font-optical-sizing: auto;
+}
+.flex {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.flex > * {
+    margin: 0;
+}
+.flex-1 {
+    flex: 1;
+}
+.text-bold {
+    color: #ffffff;
+    font-family: "SF Pro Display Bold", sans-serif;
+    font-optical-sizing: auto;
+}
+.text-bright {
+    color: oklch(90% 0 0);
+}
+.narrow-height {
+    line-height: 0;
+}
+.hide {
+    display: none;
+}
+@media (max-width: 500px) {
+    .hide.show-on-small {
+        display: block;
+    }
+}
+@media (min-width: 500px) {
+    .hide.show-on-medium {
+        display: block;
+    }
+}
+@media (min-width: 980px) {
+    .hide.show-on-large {
+        display: block;
+    }
+}
