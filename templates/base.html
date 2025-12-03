@@ -24,7 +24,7 @@
         <meta name="robots" content="index, follow">
         <meta name="googlebot" content="index, follow">
         <meta name="author" content="Nercone">
-        <meta name="theme-color" content="#1e1e1e">
+        <meta name="theme-color" content="oklch(0.197 0.008 264.0)">
         <!-- OGP (Open Graph protocol) -->
         <meta property="og:site_name" content="Nercone">
         <meta property="og:title" content="{{ self.title() }}">
@@ -42,11 +42,9 @@
         <link rel="stylesheet" href="/assets/styles/main.css">
     </head>
     <body>
-        <main>{% block content %}{% endblock %}        </main>
-        <footer class="flex">
+        <header class="flex">
             <div class="flex-1 flex">
-                <p class="text-bold">Nercone</p>
-                <p class="hide show-on-large">Thank you for visit. Have a nice day!</p>
+                <p class="text-bold"><a href="/">Nercone</a> {% block extra_title %}{% endblock %}</p>
             </div>
             <div class="flex">
                 <a href="https://github.com/DiamondGotCat/" target="_blank" rel="noopener noreferrer" class="text-bright">GitHub</a>
@@ -54,7 +52,16 @@
                 <a href="https://zenn.dev/techcat56/" target="_blank" rel="noopener noreferrer" class="text-bright hide show-on-medium">Zenn</a>
                 <a href="https://qiita.com/DiamondGotCat/" target="_blank" rel="noopener noreferrer" class="text-bright hide show-on-medium">Qiita</a>
                 <a href="https://misskey.io/@DiamondGotCat/" target="_blank" rel="noopener noreferrer" class="text-bright hide show-on-medium">Misskey</a>
+            </div>
+        </header>
+        <main>{% block content %}{% endblock %}        </main>
+        <footer class="flex">
+            <div class="flex-1 flex">
+                <p class="hide show-on-medium">Thank you for visit. Have a nice day!</p>
+            </div>
+            <div class="flex">
                 <p class="hide show-on-large">Copyright (c) 2025 DiamondGotCat</p>
+                <a href="https://github.com/DiamondGotCat/nercone-webserver/" target="_blank" rel="noopener noreferrer" class="text-bright show-on-medium">Source Code</a>
             </div>
         </footer>
     </body>

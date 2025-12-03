@@ -5,7 +5,7 @@
     "start_url": "https://diamondgotcat.net/",
     "display": "standalone",
     "theme_color": "#1e1e1e",
-    "background_color": "#000000",
+    "background_color": "oklch(0.197 0.008 264.0)",
     "icons": [
         {
             "src": "/android-chrome-192x192.png",
