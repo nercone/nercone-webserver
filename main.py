@@ -73,12 +73,12 @@ async def middleware(request: Request, call_next):
         f.write(f"URL : {request.url}\n")
         f.write(f"----- ROUTE -----\n")
         for i in range(len(proxy_route)):
-            if i == 0:
-                f.write(f"{proxy_route[i]} (ORIGIN)\n")
-            elif i == len(proxy_route) - 1:
-                f.write(f"{proxy_route[i]} (LAST)\n")
+            if proxy_route[i] == origin_client_host:
+                f.write(f"[O] {proxy_route[i]}\n")
+            elif proxy_route[i] == request.client.host:
+                f.write(f"[P] {proxy_route[i]}\n")
             else:
-                f.write(f"{proxy_route[i]}\n")
+                f.write(f"[M] {proxy_route[i]}\n")
         f.write(f"----- HEADER -----\n")
         for key, value in request.headers.items():
             f.write(f"{key}: {value}\n")
