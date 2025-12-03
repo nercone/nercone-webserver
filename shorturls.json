@@ -1,11 +1,12 @@
 {
-  "home": { "type": "redirect", "content": "https://www.diamondgotcat.net/" },
-  "github": { "type": "redirect", "content": "https://github.com/DiamondGotCat/" },
-  "ypsh": { "type": "redirect", "content": "https://ypsh.diamondgotcat.net/" },
-  "ypsh-dl": { "type": "redirect", "content": "https://ypsh.diamondgotcat.net/download/" },
-  "ypsh-docs": { "type": "redirect", "content": "https://ypsh.diamondgotcat.net/docs/" },
-  "x": { "type": "redirect", "content": "https://x.com/DiamondGotCat/" },
-  "twitter": { "type": "alias", "content": "x" },
-  "never-gonna-give-you-up": { "type": "redirect", "content": "https://youtu.be/dQw4w9WgXcQ?si=MTA8bPNsSyrYypED" },
-  "special-link": { "type": "alias", "content": "never-gonna-give-you-up" }
+  "home": {"type": "redirect", "content": "https://www.diamondgotcat.net/"},
+  "github": {"type": "redirect", "content": "https://github.com/DiamondGotCat/"},
+  "ypsh": {"type": "redirect", "content": "https://ypsh.diamondgotcat.net/"},
+  "ypsh-dl": {"type": "redirect", "content": "https://ypsh.diamondgotcat.net/download/"},
+  "ypsh-docs": {"type": "redirect", "content": "https://ypsh.diamondgotcat.net/docs/"},
+  "x": {"type": "redirect", "content": "https://x.com/DiamondGotCat/"},
+  "twitter": {"type": "alias", "content": "x"},
+  "never-gonna-give-you-up":{ "type": "redirect", "content": "https://youtu.be/dQw4w9WgXcQ?si=MTA8bPNsSyrYypED"},
+  "special-link": {"type": "alias", "content": "never-gonna-give-you-up"},
+  "msg00001": {"type": "redirect", "content": "data:text/plain;charset=UTF-8;base64,44Gm44Go44KJ44GV44KT44Gu5b6M6Lyp44Gv44Gd44Gu56uL5aC044KS5oKq55So44GX44Gm44Gm44Go44KJ44GV44KT44Go6aa044KM6aa044KM44GX44GP44GX44Gm44KL44Gu44Gn5LiW55WM5LiA5auM44GE44Gn44GZCuOBqeOBhuOBl+OBpuOBguOCk+OBquOChOOBpOOBjOOBpuOBqOOCieOBleOCk+OBq+i/keOBhOOBruOBp+OBl+OCh+OBhuOBiy4uLgrku4rjgZnjgZDjgavjgafjgoLovp7jgoHjgZXjgZvjgZ/jgYTjgafjgZkK44GX44GL44GX44G+44Gg5a6244GZ44KJ44KP44GL44KJ44Gq44GECuW8seOBv+OChOenmOWvhuOCguefpeOCieOBquOBhArjganjgYbjgZnjgozjgbDmraLjgoHjgonjgozjgovjga7jgYvjgaouLi4K"}
 }
