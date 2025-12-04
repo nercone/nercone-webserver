@@ -5,7 +5,7 @@ html {
     background-color: oklch(0.982 0.002 256.0);
     line-height: 1;
     margin: 0;
-    font-family: "M PLUS 2", sans-serif;
+    font-family: "SF Pro", "M PLUS 2", sans-serif;
     font-optical-sizing: auto;
     font-weight: 400;
     font-style: normal;
@@ -64,7 +64,7 @@ pre {
     overflow-x: auto;
     white-space: pre;
     line-height: 32px;
-    font-family: "M PLUS 1 Code", sans-serif;
+    font-family: "SF Mono", "M PLUS 1 Code", sans-serif;
     font-optical-sizing: auto;
     font-style: normal;
 }
