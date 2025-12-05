@@ -8,6 +8,6 @@
 {% block content %}
             <p class="text-small"><span class="text-bold">ⓘ</span> 作成日時: {% block created_at %}不明{% endblock %}, 最終更新: {% block updated_at %}{{ self.created_at() }}{% endblock %}</p>
             <h2 class="text-bold">{{ self.blog_title() }}</h1>
-            <p style="padding-bottom: 16px;">{{ self.blog_description() }}</p>
+            <p style="padding-bottom: 8px;">{{ self.blog_description() }}</p>
             {% block blog_content %}<p>No contents.</p>{% endblock %}
 {% endblock %} 
