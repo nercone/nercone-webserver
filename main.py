@@ -59,6 +59,71 @@ class AccessClientType(Enum):
 
 @app.middleware("http")
 async def middleware(request: Request, call_next):
+    if request.scope.get("state", {}).get("is_retry", False):
+        return await call_next(request)
+    request_body = await request.body()
+    async def receive():
+        return {"type": "http.request", "body": request_body}
+    original_scope = request.scope.copy()
+    original_path = original_scope['path']
+    response = await call_next(request)
+    host = request.headers.get("host", "").split(":")[0]
+    host_parts = host.split('.')
+    subdomains = []
+    if len(host_parts) > 1 and host_parts[-1] == 'localhost':
+        s_parts = host_parts[:-1]
+        if s_parts:
+             subdomains = s_parts
+    elif len(host_parts) > 2:
+        s_parts = host_parts[:-2]
+        if s_parts and s_parts != ['www']:
+            subdomains = s_parts
+    if response.status_code >= 400 and subdomains:
+        original_failed_response = response
+        final_response_found = False
+        retry_strategies = [
+            "/".join(reversed(subdomains)),
+            "/".join(subdomains)
+        ]
+        for sub_prefix in retry_strategies:
+            new_path = f"/{sub_prefix}{original_path if original_path != '/' else ''}"
+            response_status = None
+            response_headers = None
+            response_body_chunks = []
+            async def capture_send(message):
+                nonlocal response_status, response_headers
+                if message["type"] == "http.response.start":
+                    response_status = message["status"]
+                    response_headers = message["headers"]
+                elif message["type"] == "http.response.body":
+                    response_body_chunks.append(message.get("body", b""))
+            retry_scope = original_scope.copy()
+            retry_scope['path'] = new_path
+            if 'raw_path' in retry_scope:
+                retry_scope['raw_path'] = new_path.encode('utf-8')
+            retry_scope['state'] = retry_scope.get('state', {})
+            retry_scope['state']['is_retry'] = True
+            try:
+                await app(retry_scope, receive, capture_send)
+            except Exception:
+                continue
+            if response_status is not None and response_status < 400:
+                final_body = b"".join(response_body_chunks)
+                decoded_headers = {
+                    key.decode("latin-1"): value.decode("latin-1")
+                    for key, value in response_headers
+                }
+                response = Response(
+                    content=final_body,
+                    status_code=response_status,
+                    headers=decoded_headers
+                )
+                final_response_found = True
+                request.scope['path'] = new_path
+                break
+        if not final_response_found:
+            response = original_failed_response
+            request.scope['path'] = original_path
     access_id = str(uuid.uuid4()).lower()
     user_agent = request.headers.get("user-agent", "")
     request.state.client_type = AccessClientType.Unknown
@@ -85,11 +150,6 @@ async def middleware(request: Request, call_next):
         proxy_route = request.headers.get("X-Forwarded-For").split(", ")
         origin_client_host = proxy_route[0]
     exception: Exception | None = None
-    try:
-        response = await call_next(request)
-    except Exception as e:
-        exception = e
-        response = PlainTextResponse("Internal Server Error", status_code=500)
     response.headers["Server"] = "Nercone Web Server"
     access_log_dir = Path(__file__).parent.joinpath("logs", "access")
     if not access_log_dir.exists():
