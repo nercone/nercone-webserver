@@ -51,7 +51,7 @@
     <body>
         <header class="flex text-white">
             <div class="flex-1 flex">
-                <p><a href="https://www.diamondgotcat.net/" class="text-bold">Nercone</a> <a href="/">{% block extra_title %}{% endblock %}</a></p>
+                <p><a href="https://www.diamondgotcat.net/" class="text-bold">Nercone</a> <a href="{% block base_url %}/{% endblock %}">{% block extra_title %}{% endblock %}</a></p>
             </div>
             <div class="flex">
                 <a href="https://github.com/DiamondGotCat/" target="_blank" rel="noopener noreferrer">GitHub</a>
@@ -67,7 +67,7 @@
                 <p class="text-highlight hide show-on-medium">Copyright (c) 2025 DiamondGotCat</p>
             </div>
             <div class="flex">
-                <a href="https://blog.diamondgotcat.net/" class="text-highlight">Blog</a>
+                <a href="/blog/" class="text-highlight">Blog</a>
                 <a href="https://github.com/DiamondGotCat/nercone-webserver/" target="_blank" rel="noopener noreferrer" class="text-highlight show-on-medium">Source Code</a>
             </div>
         </footer>

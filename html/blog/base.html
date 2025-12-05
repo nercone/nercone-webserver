@@ -5,6 +5,7 @@
 {% block extra_head %}
         <link rel="stylesheet" href="/assets/styles/blog.css">
 {% endblock %}
+{% block base_url %}https://diamondgotcat.net/blog/{% endblock %}
 {% block content %}
             <p class="text-small"><span class="text-bold">ⓘ</span> 作成日時: {% block created_at %}不明{% endblock %}, 最終更新: {% block updated_at %}{{ self.created_at() }}{% endblock %}</p>
             <h2 class="text-bold">{{ self.blog_title() }}</h1>
