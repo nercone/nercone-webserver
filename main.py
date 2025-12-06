@@ -200,7 +200,7 @@ async def middleware(request: Request, call_next):
     elif str(response.status_code).startswith("5"):
         log_level = "ERROR"
         status_code_color = "red"
-    logger.log(f"{ModernColor.color(status_code_color)}{response.status_code}{ModernColor.color('reset')} {access_id} {request.client.host} {ModernColor.color('gray')}{request.url} ({request.state.client_type}){ModernColor.color('reset')}", level_text=log_level)
+    logger.log(f"{ModernColor.color(status_code_color)}{response.status_code}{ModernColor.color('reset')} {access_id} {request.client.host} {ModernColor.color('gray')}{request.url}{ModernColor.color('reset')}", level_text=log_level)
     return response
 
 @app.api_route("/to/{url_id:path}", methods=["GET", "POST", "HEAD"])
