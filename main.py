@@ -204,7 +204,7 @@ async def middleware(request: Request, call_next):
     return response
 
 @app.api_route("/status", methods=["GET"])
-async def short_url(request: Request, url_id: str):
+async def short_url(request: Request):
     return JSONResponse({"status": "ok"}, status_code=200)
 
 @app.api_route("/to/{url_id:path}", methods=["GET", "POST", "HEAD"])
