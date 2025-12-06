@@ -1,1 +1,1 @@
-docker run nercone/nercone-webserver:latest
+docker run -d --restart unless-stopped nercone/nercone-webserver:latest
