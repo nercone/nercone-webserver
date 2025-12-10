@@ -54,14 +54,14 @@
     <body>
         <header class="flex text-white">
             <div class="flex-1 flex">
-                <p><a href="https://diamondgotcat.net/" class="text-bold">Nercone</a> <a href="{% block base_url %}/{% endblock %}">{% block extra_title %}{% endblock %}</a></p>
+                <p><a href="https://diamondgotcat.net/" class="text-bold text-no-decoration">Nercone</a> <a href="{% block base_url %}/{% endblock %}" class="text-no-decoration">{% block extra_title %}{% endblock %}</a></p>
             </div>
             <div class="flex">
-                <a href="https://github.com/DiamondGotCat/" target="_blank" rel="noopener noreferrer">GitHub</a>
-                <a href="https://twitter.com/DiamondGotCat/" target="_blank" rel="noopener noreferrer">Twitter</a>
-                <a href="https://zenn.dev/techcat56/" target="_blank" rel="noopener noreferrer" class="hide show-on-medium">Zenn</a>
-                <a href="https://qiita.com/DiamondGotCat/" target="_blank" rel="noopener noreferrer" class="hide show-on-medium">Qiita</a>
-                <a href="https://misskey.io/@DiamondGotCat/" target="_blank" rel="noopener noreferrer" class="hide show-on-medium">Misskey</a>
+                <a href="https://github.com/DiamondGotCat/" target="_blank" rel="noopener noreferrer" class="text-no-decoration">GitHub</a>
+                <a href="https://twitter.com/DiamondGotCat/" target="_blank" rel="noopener noreferrer" class="text-no-decoration">Twitter</a>
+                <a href="https://zenn.dev/techcat56/" target="_blank" rel="noopener noreferrer" class="hide show-on-medium text-no-decoration">Zenn</a>
+                <a href="https://qiita.com/DiamondGotCat/" target="_blank" rel="noopener noreferrer" class="hide show-on-medium text-no-decoration">Qiita</a>
+                <a href="https://misskey.io/@DiamondGotCat/" target="_blank" rel="noopener noreferrer" class="hide show-on-medium text-no-decoration">Misskey</a>
             </div>
         </header>
         <main>{% block content %}{% endblock %}        </main>
@@ -70,9 +70,9 @@
                 <p class="text-highlight hide show-on-medium">Copyright (c) 2025 DiamondGotCat</p>
             </div>
             <div class="flex">
-                <a href="/blog/" class="text-highlight">Blog</a>
-                <a href="https://status.diamondgotcat.net/status/" class="text-highlight">Status</a>
-                <a href="https://github.com/DiamondGotCat/nercone-webserver/" target="_blank" rel="noopener noreferrer" class="text-highlight show-on-medium">Source Code</a>
+                <a href="/blog/" class="text-highlight text-no-decoration">Blog</a>
+                <a href="https://status.diamondgotcat.net/status/" class="text-highlight text-no-decoration">Status</a>
+                <a href="https://github.com/DiamondGotCat/nercone-webserver/" target="_blank" rel="noopener noreferrer" class="text-highlight text-no-decoration show-on-medium">Source Code</a>
             </div>
         </footer>
     </body>

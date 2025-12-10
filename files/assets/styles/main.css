@@ -100,6 +100,9 @@ pre {
 .text-bold {
     font-weight: 700;
 }
+.text-no-decoration {
+    text-decoration: none;
+}
 .text-underline {
     text-decoration: underline;
 }
