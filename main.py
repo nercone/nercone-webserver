@@ -182,11 +182,13 @@ async def middleware(request: Request, call_next):
             f.write(f"REQUEST.HEAD[{key}]: {value}\n")
         for key, value in request.cookies.items():
             f.write(f"REQUEST.COOK[{key}]: {value}\n")
+        f.write("\n")
         try:
             whois_proc = subprocess.Popen([shutil.which("whois"), strip_ip_chars(str(origin_client_host))], encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            whois_output: str = ""
+            whois_output = ""
             for line in whois_proc.stdout:
-                whois_output += line
+                if line.strip() != "":
+                    whois_output += line
             whois_proc.wait()
             if whois_proc.returncode == 0:
                 f.write("[WHOIS]\n")
@@ -200,6 +202,7 @@ async def middleware(request: Request, call_next):
         for key, value in response.headers.items():
             f.write(f"RESPONSE.HEAD[{key}]: {value}\n")
         if exception:
+            f.write("\n")
             f.write("[EXCEPTION]\n")
             f.write(str(exception))
     log_level = "INFO"
