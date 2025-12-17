@@ -95,192 +95,196 @@ class AccessClientType(Enum):
 
 @app.middleware("http")
 async def middleware(request: Request, call_next):
-    start_time = datetime.now(timezone.utc)
-    if request.scope.get("state", {}).get("is_retry", False):
-        return await call_next(request)
-    request_body = await request.body()
-    async def receive():
-        return {"type": "http.request", "body": request_body}
-    original_scope = request.scope.copy() # type: ignore
-    original_path = original_scope['path']
-    host = request.headers.get("host", "").split(":")[0]
-    host_parts = host.split('.')
-    subdomains = []
-    if len(host_parts) > 1 and host_parts[-1] == 'localhost':
-        s_parts = host_parts[:-1]
-        if s_parts:
-             subdomains = s_parts
-    elif len(host_parts) > 2:
-        s_parts = host_parts[:-2]
-        if s_parts and s_parts != ['www']:
-            subdomains = s_parts
-    response = None
-    if subdomains:
-        retry_strategies = ["/".join(reversed(subdomains))]
-        for p in permutations(subdomains):
-            path_candidate = "/".join(p)
-            if path_candidate not in retry_strategies:
-                retry_strategies.append(path_candidate)
-        for sub_prefix in retry_strategies:
-            new_path = f"/{sub_prefix}{original_path if original_path != '/' else ''}"
-            response_status = None
-            response_headers = None
-            response_body_chunks = []
-            async def capture_send(message):
-                nonlocal response_status, response_headers
-                if message["type"] == "http.response.start":
-                    response_status = message["status"]
-                    response_headers = message["headers"]
-                elif message["type"] == "http.response.body":
-                    response_body_chunks.append(message.get("body", b""))
-            retry_scope = original_scope.copy()
-            retry_scope['path'] = new_path
-            if 'raw_path' in retry_scope:
-                retry_scope['raw_path'] = new_path.encode('utf-8')
-            retry_scope['state'] = retry_scope.get('state', {})
-            retry_scope['state']['is_retry'] = True
-            try:
-                await app(retry_scope, receive, capture_send)
-            except Exception:
-                continue
-            if response_status is not None and response_status < 400:
-                final_body = b"".join(response_body_chunks)
-                decoded_headers = {
-                    key.decode("latin-1"): value.decode("latin-1")
-                    for key, value in response_headers
-                }
-                response = Response(
-                    content=final_body,
-                    status_code=response_status,
-                    headers=decoded_headers
-                )
-                request.scope['path'] = new_path
-                break
-        if response is None:
-            request.scope['path'] = original_path
-            response = await call_next(request)
-    else:
-        response = await call_next(request)
-    access_id = str(uuid.uuid4()).lower()
-    user_agent = request.headers.get("user-agent", "")
-    request.state.client_type = AccessClientType.Unknown
-    if "fastget" in user_agent.lower():
-        request.state.client_type = AccessClientType.FastGet
-    elif "curl" in user_agent.lower():
-        request.state.client_type = AccessClientType.cURL
-    elif "wget" in user_agent.lower():
-        request.state.client_type = AccessClientType.Wget
-    elif "firefox" in user_agent.lower():
-        request.state.client_type = AccessClientType.Firefox
-    elif "opr" in user_agent.lower():
-        request.state.client_type = AccessClientType.Opera
-    elif "edg" in user_agent.lower():
-        request.state.client_type = AccessClientType.Edge
-    elif "chrome" in user_agent.lower():
-        request.state.client_type = AccessClientType.Chrome
-    elif "safari" in user_agent.lower():
-        request.state.client_type = AccessClientType.Safari
-    request.state.client_type = request.state.client_type.value
-    proxy_route = []
-    origin_client_host = request.client.host # type: ignore
-    if "X-Forwarded-For" in request.headers:
-        proxy_route = request.headers.get("X-Forwarded-For", "").split(",")
-        origin_client_host = proxy_route[0]
-    exception: Exception | None = None
-    response.headers["Server"] = "Nercone Web Server"
-    response_body = b""
-    if not isinstance(response, (FileResponse, RedirectResponse)):
-        async for chunk in response.body_iterator:
-            response_body += chunk
-        response = Response(
-            content=response_body,
-            status_code=response.status_code,
-            headers=dict(response.headers),
-            media_type=response.media_type,
-        )
-    end_time = datetime.now(timezone.utc)
-    access_log_dir = Path(__file__).parent.joinpath("logs", "access")
-    if not access_log_dir.exists():
-        access_log_dir.mkdir(parents=True, exist_ok=True)
-    with access_log_dir.joinpath(f"{access_id}.txt").open("w", encoding="utf-8") as f:
-        f.write("[REQUEST]\n")
-        f.write(f"REQUEST.TIME: {start_time.strftime('%Y-%m-%dT%H:%M:%SZ')}\n")
-        f.write(f"REQUEST.METH: {request.method}\n")
-        f.write(f"REQUEST.HOST: {request.client.host}\n") # type: ignore
-        f.write(f"REQUEST.PORT: {request.client.port}\n") # type: ignore
-        f.write(f"REQUEST.ORGN: {origin_client_host}\n")
-        f.write(f"REQUEST.TYPE: {request.state.client_type}\n")
-        f.write(f"REQUEST.URL : {request.url}\n")
-        for i in range(len(proxy_route)):
-            if proxy_route[i] == origin_client_host:
-                f.write(f"REQUEST.ROUT[{i}]: {proxy_route[i].strip()} (O)\n")
-            elif proxy_route[i] == request.client.host: # type: ignore
-                f.write(f"REQUEST.ROUT[{i}]: {proxy_route[i].strip()} (P)\n")
-            else:
-                f.write(f"REQUEST.ROUT[{i}]: {proxy_route[i].strip()} (M)\n")
-        for key, value in request.headers.items():
-            f.write(f"REQUEST.HEAD[{key}]: {value}\n")
-        for key, value in request.cookies.items():
-            f.write(f"REQUEST.COOK[{key}]: {value}\n")
-        if 0 < len(request_body) <= MAX_BODY_LOG_SIZE:
-            try:
-                decoded_body = request_body.decode("utf-8")
-                f.write("REQUEST.BODY: ---\n")
-                f.write(decoded_body)
-                f.write("---\n")
-            except UnicodeDecodeError:
-                pass
-        f.write("\n")
-        try:
-            whois_result = whois(origin_client_host)
-            if whois_result is not None:
-                f.write("[WHOIS]\n")
-                f.write(whois_result)
-                f.write("\n")
-        except:
-            pass
-        f.write("[RESPONSE]\n")
-        f.write(f"RESPONSE.TIME: {end_time.strftime('%Y-%m-%dT%H:%M:%SZ')}\n")
-        f.write(f"RESPONSE.CODE: {response.status_code}\n")
-        f.write(f"RESPONSE.CHAR: {response.charset}\n")
-        for key, value in response.headers.items():
-            f.write(f"RESPONSE.HEAD[{key}]: {value}\n")
-        if 0 < len(response_body) <= MAX_BODY_LOG_SIZE:
-            try:
-                charset = response.charset if response.charset else 'utf-8'
+    try:
+        start_time = datetime.now(timezone.utc)
+        if request.scope.get("state", {}).get("is_retry", False):
+            return await call_next(request)
+        request_body = await request.body()
+        async def receive():
+            return {"type": "http.request", "body": request_body}
+        original_scope = request.scope.copy() # type: ignore
+        original_path = original_scope['path']
+        host = request.headers.get("host", "").split(":")[0]
+        host_parts = host.split('.')
+        subdomains = []
+        if len(host_parts) > 1 and host_parts[-1] == 'localhost':
+            s_parts = host_parts[:-1]
+            if s_parts:
+                subdomains = s_parts
+        elif len(host_parts) > 2:
+            s_parts = host_parts[:-2]
+            if s_parts and s_parts != ['www']:
+                subdomains = s_parts
+        response = None
+        if subdomains:
+            retry_strategies = ["/".join(reversed(subdomains))]
+            for p in permutations(subdomains):
+                path_candidate = "/".join(p)
+                if path_candidate not in retry_strategies:
+                    retry_strategies.append(path_candidate)
+            for sub_prefix in retry_strategies:
+                new_path = f"/{sub_prefix}{original_path if original_path != '/' else ''}"
+                response_status = None
+                response_headers = None
+                response_body_chunks = []
+                async def capture_send(message):
+                    nonlocal response_status, response_headers
+                    if message["type"] == "http.response.start":
+                        response_status = message["status"]
+                        response_headers = message["headers"]
+                    elif message["type"] == "http.response.body":
+                        response_body_chunks.append(message.get("body", b""))
+                retry_scope = original_scope.copy()
+                retry_scope['path'] = new_path
+                if 'raw_path' in retry_scope:
+                    retry_scope['raw_path'] = new_path.encode('utf-8')
+                retry_scope['state'] = retry_scope.get('state', {})
+                retry_scope['state']['is_retry'] = True
                 try:
-                    decoded_body = response_body.decode(charset)
-                except (UnicodeDecodeError, LookupError):
-                    decoded_body = response_body.decode('utf-8', errors='replace')
-                f.write("RESPONSE.BODY: ---\n")
-                f.write(decoded_body)
-                f.write("---\n")
-            except UnicodeDecodeError:
-                pass
-        if exception:
+                    await app(retry_scope, receive, capture_send)
+                except Exception:
+                    continue
+                if response_status is not None and response_status < 400:
+                    final_body = b"".join(response_body_chunks)
+                    decoded_headers = {
+                        key.decode("latin-1"): value.decode("latin-1")
+                        for key, value in response_headers
+                    }
+                    response = Response(
+                        content=final_body,
+                        status_code=response_status,
+                        headers=decoded_headers
+                    )
+                    request.scope['path'] = new_path
+                    break
+            if response is None:
+                request.scope['path'] = original_path
+                response = await call_next(request)
+        else:
+            response = await call_next(request)
+        access_id = str(uuid.uuid4()).lower()
+        user_agent = request.headers.get("user-agent", "")
+        request.state.client_type = AccessClientType.Unknown
+        if "fastget" in user_agent.lower():
+            request.state.client_type = AccessClientType.FastGet
+        elif "curl" in user_agent.lower():
+            request.state.client_type = AccessClientType.cURL
+        elif "wget" in user_agent.lower():
+            request.state.client_type = AccessClientType.Wget
+        elif "firefox" in user_agent.lower():
+            request.state.client_type = AccessClientType.Firefox
+        elif "opr" in user_agent.lower():
+            request.state.client_type = AccessClientType.Opera
+        elif "edg" in user_agent.lower():
+            request.state.client_type = AccessClientType.Edge
+        elif "chrome" in user_agent.lower():
+            request.state.client_type = AccessClientType.Chrome
+        elif "safari" in user_agent.lower():
+            request.state.client_type = AccessClientType.Safari
+        request.state.client_type = request.state.client_type.value
+        proxy_route = []
+        origin_client_host = request.client.host # type: ignore
+        if "X-Forwarded-For" in request.headers:
+            proxy_route = request.headers.get("X-Forwarded-For", "").split(",")
+            origin_client_host = proxy_route[0]
+        exception: Exception | None = None
+        response.headers["Server"] = "Nercone Web Server"
+        response_body = b""
+        if not isinstance(response, (FileResponse, RedirectResponse)):
+            async for chunk in response.body_iterator:
+                response_body += chunk
+            response = Response(
+                content=response_body,
+                status_code=response.status_code,
+                headers=dict(response.headers),
+                media_type=response.media_type,
+            )
+        end_time = datetime.now(timezone.utc)
+        access_log_dir = Path(__file__).parent.joinpath("logs", "access")
+        if not access_log_dir.exists():
+            access_log_dir.mkdir(parents=True, exist_ok=True)
+        with access_log_dir.joinpath(f"{access_id}.txt").open("w", encoding="utf-8") as f:
+            f.write("[REQUEST]\n")
+            f.write(f"REQUEST.TIME: {start_time.strftime('%Y-%m-%dT%H:%M:%SZ')}\n")
+            f.write(f"REQUEST.METH: {request.method}\n")
+            f.write(f"REQUEST.HOST: {request.client.host}\n") # type: ignore
+            f.write(f"REQUEST.PORT: {request.client.port}\n") # type: ignore
+            f.write(f"REQUEST.ORGN: {origin_client_host}\n")
+            f.write(f"REQUEST.TYPE: {request.state.client_type}\n")
+            f.write(f"REQUEST.URL : {request.url}\n")
+            for i in range(len(proxy_route)):
+                if proxy_route[i] == origin_client_host:
+                    f.write(f"REQUEST.ROUT[{i}]: {proxy_route[i].strip()} (O)\n")
+                elif proxy_route[i] == request.client.host: # type: ignore
+                    f.write(f"REQUEST.ROUT[{i}]: {proxy_route[i].strip()} (P)\n")
+                else:
+                    f.write(f"REQUEST.ROUT[{i}]: {proxy_route[i].strip()} (M)\n")
+            for key, value in request.headers.items():
+                f.write(f"REQUEST.HEAD[{key}]: {value}\n")
+            for key, value in request.cookies.items():
+                f.write(f"REQUEST.COOK[{key}]: {value}\n")
+            if 0 < len(request_body) <= MAX_BODY_LOG_SIZE:
+                try:
+                    decoded_body = request_body.decode("utf-8")
+                    f.write("REQUEST.BODY: ---\n")
+                    f.write(decoded_body)
+                    f.write("---\n")
+                except UnicodeDecodeError:
+                    pass
             f.write("\n")
-            f.write("[EXCEPTION]\n")
-            f.write(str(exception))
-    log_level = "INFO"
-    status_code_color = "magenta"
-    if str(response.status_code).startswith("1"):
+            try:
+                whois_result = whois(origin_client_host)
+                if whois_result is not None:
+                    f.write("[WHOIS]\n")
+                    f.write(whois_result)
+                    f.write("\n")
+            except:
+                pass
+            f.write("[RESPONSE]\n")
+            f.write(f"RESPONSE.TIME: {end_time.strftime('%Y-%m-%dT%H:%M:%SZ')}\n")
+            f.write(f"RESPONSE.CODE: {response.status_code}\n")
+            f.write(f"RESPONSE.CHAR: {response.charset}\n")
+            for key, value in response.headers.items():
+                f.write(f"RESPONSE.HEAD[{key}]: {value}\n")
+            if 0 < len(response_body) <= MAX_BODY_LOG_SIZE:
+                try:
+                    charset = response.charset if response.charset else 'utf-8'
+                    try:
+                        decoded_body = response_body.decode(charset)
+                    except (UnicodeDecodeError, LookupError):
+                        decoded_body = response_body.decode('utf-8', errors='replace')
+                    f.write("RESPONSE.BODY: ---\n")
+                    f.write(decoded_body)
+                    f.write("---\n")
+                except UnicodeDecodeError:
+                    pass
+            if exception:
+                f.write("\n")
+                f.write("[EXCEPTION]\n")
+                f.write(str(exception))
         log_level = "INFO"
-        status_code_color = "cyan"
-    elif str(response.status_code).startswith("2"):
-        log_level = "INFO"
-        status_code_color = "green"
-    elif str(response.status_code).startswith("3"):
-        log_level = "INFO"
-        status_code_color = "blue"
-    elif str(response.status_code).startswith("4"):
-        log_level = "WARNING"
-        status_code_color = "yellow"
-    elif str(response.status_code).startswith("5"):
-        log_level = "ERROR"
-        status_code_color = "red"
-    if not request.scope['path'].strip("/") in log_exclude_paths:
-        logger.log(f"{ModernColor.color(status_code_color)}{response.status_code}{ModernColor.color('reset')} {access_id} {request.client.host} {ModernColor.color('gray')}{request.url}{ModernColor.color('reset')}", level_text=log_level) # type: ignore
-    return response
+        status_code_color = "magenta"
+        if str(response.status_code).startswith("1"):
+            log_level = "INFO"
+            status_code_color = "cyan"
+        elif str(response.status_code).startswith("2"):
+            log_level = "INFO"
+            status_code_color = "green"
+        elif str(response.status_code).startswith("3"):
+            log_level = "INFO"
+            status_code_color = "blue"
+        elif str(response.status_code).startswith("4"):
+            log_level = "WARNING"
+            status_code_color = "yellow"
+        elif str(response.status_code).startswith("5"):
+            log_level = "ERROR"
+            status_code_color = "red"
+        if not request.scope['path'].strip("/") in log_exclude_paths:
+            logger.log(f"{ModernColor.color(status_code_color)}{response.status_code}{ModernColor.color('reset')} {access_id} {request.client.host} {ModernColor.color('gray')}{request.url}{ModernColor.color('reset')}", level_text=log_level) # type: ignore
+        return response
+    except:
+        logger.log("Fatal exception in middleware!!!", level_text="ERROR")
+        raise
 
 @app.api_route("/status", methods=["GET"])
 async def short_url(request: Request):

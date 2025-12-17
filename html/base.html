@@ -48,13 +48,46 @@
         <meta name="twitter:image" content="https://diamondgotcat.net/assets/images/nercone.png">
         <!-- Scripts / Stylesheets etc. -->
         <link rel="manifest" href="/site.webmanifest">
+        <link rel="stylesheet" href="https://www.apple.com/wss/fonts?families=SF+Compact+Display,v3|SF+Compact+Text,v3|SF+Compact,v3|SF+Pro+Display,v3|SF+Pro+Text,v3|SF+Pro,v3|SF+Pro+Icons,v3|SF+Mono,v3">
         <style>
+            @font-face {
+                font-family: "MesloLGS Nerd Font";
+                font-style: normal;
+                font-weight: 400;
+                src:
+                    local("MesloLGS Nerd Font"),
+                    url("https://diamondgotcat.net/assets/fonts/MesloLGSNerdFont-Regular.woff2") format("woff2")
+            }
+            @font-face {
+                font-family: "MesloLGS Nerd Font";
+                font-style: normal;
+                font-weight: 700;
+                src:
+                    local("MesloLGS Nerd Font"),
+                    url("https://diamondgotcat.net/assets/fonts/MesloLGSNerdFont-Bold.woff2") format("woff2")
+            }
+            @font-face {
+                font-family: "MesloLGS Nerd Font";
+                font-style: italic;
+                font-weight: 400;
+                src:
+                    local("MesloLGS Nerd Font"),
+                    url("https://diamondgotcat.net/assets/fonts/MesloLGSNerdFont-Italic.woff2") format("woff2")
+            }
+            @font-face {
+                font-family: "MesloLGS Nerd Font";
+                font-style: italic;
+                font-weight: 700;
+                src:
+                    local("MesloLGS Nerd Font"),
+                    url("https://diamondgotcat.net/assets/fonts/MesloLGSNerdFont-BoldItalic.woff2") format("woff2")
+            }
             html {
                 color: oklch(55% 0 0);
                 background-color: oklch(0.982 0.002 256.0);
                 line-height: 1.2;
                 margin: 0;
-                font-family: "SF Pro", "M PLUS 2", sans-serif;
+                font-family: "SF Compact Display", "SF Compact Text", "SF Compact", "SF Pro Display", "SF Pro Text", "SF Pro", "M PLUS 2", sans-serif;
                 font-optical-sizing: auto;
                 font-weight: 400;
                 font-style: normal;
@@ -114,7 +147,7 @@
                 overflow-x: auto;
                 white-space: pre;
                 line-height: 32px;
-                font-family: "SF Mono", "M PLUS 1 Code", sans-serif;
+                font-family: "MesloLGS Nerd Font", "SF Mono", "M PLUS 1 Code", sans-serif;
                 font-optical-sizing: auto;
                 font-style: normal;
             }
@@ -124,7 +157,7 @@
                 padding: 2px;
                 border-radius: 5px;
                 white-space: pre;
-                font-family: "SF Mono", "M PLUS 1 Code", sans-serif;
+                font-family: "MesloLGS Nerd Font", "SF Mono", "M PLUS 1 Code", sans-serif;
                 font-optical-sizing: auto;
                 font-style: normal;
             }
