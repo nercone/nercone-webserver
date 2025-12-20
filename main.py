@@ -10,7 +10,7 @@ from enum import Enum
 from pathlib import Path
 from itertools import permutations
 from functools import lru_cache
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from nercone_modern.color import ModernColor
 from nercone_modern.logging import ModernLogging
 from fastapi import FastAPI, Request, Response
@@ -24,18 +24,25 @@ templates = Jinja2Templates(directory="html")
 log_filepath = Path(__file__).parent.joinpath("logs", "main.log")
 logger = ModernLogging("nercone-webserver", filepath=str(log_filepath))
 log_exclude_paths = ["status"]
-block_messages = [
-    "Nice try, but this system is a bit ahead of that.",
-    "That approach is already accounted for.",
-    "That attack is far too primitive for this system.",
-    "Please upgrade your attack techniques.",
-    "You'll need a better idea than that.",
-    "That attack is far too low-level to matter.",
-    "Outdated exploit. Try again.",
-    "404 Vulnerability Not Found.",
-    "Please upgrade your hacking skills."
+daily_phrases = [
+    "Markitdownのネーミングセンス良いよね",
+    "LinuxディストリビューションはFedoraが最強",
+    "そろそろC++とかRustとか学ばなきゃだな",
+    "MicrosoftはGitHubだけやってればいい",
+    "Lythonのコード全部理解できるようになりたい",
+    "時代はzsh",
+    "macOSって意外と開発に合ってる",
+    "WindowsはNTFSをいつまで使うのか",
+    "このサイトのアクセスのほとんどはPHPとかWordpressとかを狙ったボットによるものです",
+    "Tailscale最高",
+    "眠い",
+    "人とは愚かなものです 特に僕",
+    "macOS Sonomama",
+    "TeXのバージョン番号の付け方面白い",
+    "Pithon 3.1415926535897932384696433",
+    "ねぇ知ってる？人間は皆ホモなんだよ？(ホモ・サピエンス)"
 ]
-MAX_BODY_LOG_SIZE = 1024 * 100 # 100KB
+MAX_BODY_LOG_SIZE = 1024 * 128 # 128KiB
 
 def strip_ip_chars(s: str) -> str:
     return re.sub(r'[^0-9A-Fa-f:.]', '', s)
@@ -52,6 +59,12 @@ def whois(address: str) -> str | None:
         return whois_output
     else:
         return None
+
+def todays_phrase():
+    today = datetime.now(timezone.utc).date()
+    rng = random.Random(str(today))
+    return rng.choice(daily_phrases)
+templates.env.globals["todays_phrase"] = todays_phrase
 
 def list_articles():
     base_dir = Path(__file__).parent / "html"
@@ -183,7 +196,12 @@ async def middleware(request: Request, call_next):
             request.state.client_type = AccessClientType.Safari
         request.state.client_type = request.state.client_type.value
         proxy_route = []
-        origin_client_host = request.client.host # type: ignore
+        if request.client is not None:
+            request_client_host = request.client.host
+            origin_client_host = request.client.host
+        else:
+            request_client_host = "unknown"
+            origin_client_host = "unknown"
         if "X-Forwarded-For" in request.headers:
             proxy_route = request.headers.get("X-Forwarded-For", "").split(",")
             origin_client_host = proxy_route[0]
@@ -210,15 +228,14 @@ async def middleware(request: Request, call_next):
             f.write("[REQUEST]\n")
             f.write(f"REQUEST.TIME: {start_time.strftime('%Y-%m-%dT%H:%M:%SZ')}\n")
             f.write(f"REQUEST.METH: {request.method}\n")
-            f.write(f"REQUEST.HOST: {request.client.host}\n") # type: ignore
-            f.write(f"REQUEST.PORT: {request.client.port}\n") # type: ignore
+            f.write(f"REQUEST.HOST: {request_client_host}\n")
             f.write(f"REQUEST.ORGN: {origin_client_host}\n")
             f.write(f"REQUEST.TYPE: {request.state.client_type}\n")
             f.write(f"REQUEST.URL : {request.url}\n")
             for i in range(len(proxy_route)):
                 if proxy_route[i] == origin_client_host:
                     f.write(f"REQUEST.ROUT[{i}]: {proxy_route[i].strip()} (O)\n")
-                elif proxy_route[i] == request.client.host: # type: ignore
+                elif proxy_route[i] == request_client_host:
                     f.write(f"REQUEST.ROUT[{i}]: {proxy_route[i].strip()} (P)\n")
                 else:
                     f.write(f"REQUEST.ROUT[{i}]: {proxy_route[i].strip()} (M)\n")
@@ -283,7 +300,7 @@ async def middleware(request: Request, call_next):
             log_level = "ERROR"
             status_code_color = "red"
         if not request.scope['path'].strip("/") in log_exclude_paths:
-            logger.log(f"{ModernColor.color(status_code_color)}{response.status_code}{ModernColor.color('reset')} {access_id} {request.client.host} {ModernColor.color('gray')}{request.url}{ModernColor.color('reset')}", level_text=log_level) # type: ignore
+            logger.log(f"{ModernColor.color(status_code_color)}{response.status_code}{ModernColor.color('reset')} {access_id} {request_client_host} {ModernColor.color('gray')}{request.url}{ModernColor.color('reset')}", level_text=log_level)
         return response
     except:
         logger.log("Fatal exception in middleware!!!", level_text="ERROR")
@@ -328,14 +345,18 @@ async def short_url(request: Request, url_id: str):
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD"])
 async def default_response(request: Request, full_path: str) -> Response:
-    if any(t in full_path for t in ["php", "cgi", "wp-", "admin", "plugins"]):
-        return PlainTextResponse(random.choice(block_messages), status_code=404)
+    if "php" in full_path:
+        return PlainTextResponse("PHP？そんなものないよ。", status_code=404)
+    if "wp-" in full_path:
+        return PlainTextResponse("Wordpressは使ってないよ。", status_code=404)
+    if "cms" in full_path:
+        return PlainTextResponse("CMSなんて使ってないよ。", status_code=404)
     if not full_path.endswith(".html"):
         base_dir = Path(__file__).parent / "files"
         safe_full_path = full_path.lstrip('/')
         target_path = (base_dir / safe_full_path).resolve()
         if not str(target_path).startswith(str(base_dir.resolve())):
-            return PlainTextResponse(random.choice(block_messages), status_code=403)
+            return PlainTextResponse("ディレクトリトラバーサルね、知ってる", status_code=403)
         if target_path.exists() and target_path.is_file():
             return FileResponse(target_path)
     templates_to_try = []
