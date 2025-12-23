@@ -4,7 +4,7 @@
 {% block blog_content %}
             <section id="background">
                 <h3 class="text-bold">経緯</h3>
-                <p>Raspberry Pi 5で動かしているAlmaLinux 9.7でSELinuxを無効化していたのですが、<span class="code">dbus-:1.1-org.fedoraproject.SetroubleshootFixit&#64;0.service</span>とかいう変なサービスが勝手に起動して勝手にクラッシュしていました。</p>
+                <p>Raspberry Pi 5でAlmaLinux 9.7を使用していたのですが、<span class="code">dbus-:1.1-org.fedoraproject.SetroubleshootFixit&#64;0.service</span>とかいう変なサービスが勝手に起動して勝手にクラッシュしていました。</p>
                 <p>無効化したかったため<span class="code">systemctl</span>コマンドで無効化しようとしたのですが、systemdサービスではなかったようで無効化できませんでした。<span class="text-lowlight">まあ名前からして予想はついていましたが...</span></p>
                 <p>ディスク全体を調べ上げてDBus？というやつが怪しそうだったため調べていたところこいつはDBusサービス(systemdとは別の仕組み？らしい)のものだと知りました。</p>
                 <p>しかしDBusなんてものは知らないですし、これ以上英語のフォーラムとかを読んで疲れるのも嫌なので、ChatGPTやGeminiなどを使用して方法を探し、なんとか見つかったので備忘録も兼ねて共有します。</p>
@@ -22,5 +22,9 @@
                 <p>そこで、sedispatchプラグインを無効化し、auditdがsedispatchを起動しなくすれば、そもそもSetroubleshootFixitは起動しない、ということのようです。</p>
                 <p>方法としては、<span class="code">/etc/audit/plugins.d/sedispatch.conf</span>にある設定ファイルを開き、<span class="code">active = yes</span>となっているところを<span class="code">active = no</span>に変更するといいらしいです。</p>
                 <p>こちらの方法は検証していませんが、もし解決策1がうまくいかなかったり、依存関係があって使いたく無い場合はこっちを使うと良さそうです。</p>
+            </section>
+            <section id="changelog">
+                <h3 class="text-bold">変更履歴</h3>
+                <p>SELinuxの有効/無効に関係ないようなので、「SELinuxを無効化していたのですが」のところを削除しました。</p>
             </section>
 {% endblock %}
