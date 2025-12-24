@@ -11,7 +11,7 @@ from enum import Enum
 from pathlib import Path
 from itertools import permutations
 from functools import lru_cache
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from nercone_modern.color import ModernColor
 from nercone_modern.logging import ModernLogging
 from fastapi import FastAPI, Request, Response
