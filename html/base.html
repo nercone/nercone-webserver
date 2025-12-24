@@ -264,7 +264,15 @@
                     display: block;
                 }
             }
+            @media (prefers-color-scheme: light) {
+                .hide.show-on-light {
+                    display: block;
+                }
+            }
             @media (prefers-color-scheme: dark) {
+                .hide.show-on-dark {
+                    display: block;
+                }
                 html {
                     color: oklch(75% 0 0);
                     background-color: oklch(0% 0 0);
@@ -406,24 +414,27 @@
     <body>
         <header class="flex">
             <div class="flex-1 flex">
-                <a href="/" class="text-highlight text-no-decoration"><span class="text-bold">Nercone</span> {% block extra_title %}Home{% endblock %}</a>
+                <a href="/" class="text-no-decoration text-highlight" style="gap: 8px;"><span class="text-bold">Nercone</span> {% block extra_title %}Home{% endblock %}</a>
                 <p class="hide show-on-medium">{% block header_desc %}{{ todays_phrase() }}{% endblock %}</p>
             </div>
             <div class="flex">
-                <a href="/access-counter/" class="text-no-decoration">#{{ get_counter() }}</a>
+                <a href="/access-counter/" class="text-no-decoration text-highlight">#{{ get_counter() }}</a>
             </div>
         </header>
         <main>{% block content %}{% endblock %}        </main>
         <footer class="flex">
             <div class="flex-1 flex">
-                <a href="/" class="text-bold text-highlight text-no-decoration">Nercone</a>
-                <a href="/about/" class="text-no-decoration hide show-on-large">About</a>
-                <a href="/blog/" class="text-no-decoration hide show-on-large">Blog</a>
-                <a href="/projects/" class="text-no-decoration hide show-on-large">Projects</a>
-                <a href="/links/" class="text-no-decoration hide show-on-large">Links</a>
-                <a href="/access-counter/" class="text-no-decoration hide show-on-large">Access Counter</a>
+                <a href="/">
+                    <img src="/assets/images/nercone_icon_light.svg" width="24pt" class="hide show-on-light">
+                    <img src="/assets/images/nercone_icon_dark.svg" width="24pt" class="hide show-on-dark">
+                </a>
+                <a href="/about/" class="text-no-decoration text-highlight hide show-on-large">About</a>
+                <a href="/blog/" class="text-no-decoration text-highlight hide show-on-large">Blog</a>
+                <a href="/projects/" class="text-no-decoration text-highlight hide show-on-large">Projects</a>
+                <a href="/links/" class="text-no-decoration text-highlight hide show-on-large">Links</a>
+                <a href="/access-counter/" class="text-no-decoration text-highlight hide show-on-large">Access Counter</a>
             </div>
-            <div class="flex">
+            <div class="flex text-highlight">
                 <p>&copy; 2025 DiamondGotCat</p>
             </div>
         </footer>
