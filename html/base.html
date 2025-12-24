@@ -395,13 +395,6 @@
                         const currentFooter = document.querySelector("footer");
                         currentFooter.innerHTML = newFooter.innerHTML;
 
-                        document.title = doc.title;
-                        const newDescription = doc.querySelector('meta[name="description"]');
-                        const currentDescription = document.querySelector('meta[name="description"]');
-                        if (newDescription && currentDescription) {
-                            currentDescription.setAttribute("content", newDescription.getAttribute("content"));
-                        }
-
                         history.pushState(null, "", url.href);
                     });
                 });
