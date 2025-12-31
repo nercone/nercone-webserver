@@ -4,18 +4,17 @@
     "description": "作りたいものを作り、やりたくないことからは逃げる学生",
     "start_url": "https://diamondgotcat.net/",
     "display": "standalone",
-    "theme_color": "oklch(0.349 0.014 264.0)",
-    "background_color": "oklch(0.197 0.008 264.0)",
+    "theme_color": "#90A4B9",
+    "background_color": "#36404A",
     "icons": [
         {
-            "src": "/assets/favicon/dark/android-chrome-192x192.png",
-            "sizes": "192x192",
-            "type": "image/png"
+            "src": "/assets/images/favicon.svg",
+            "type": "image/svg+xml"
         },
         {
-            "src": "/assets/favicon/dark/android-chrome-512x512.png",
-            "sizes": "512x512",
-            "type": "image/png"
+            "src": "/assets/images/favicon.png",
+            "type": "image/png",
+            "sizes": "720x720"
         }
     ]
 }
