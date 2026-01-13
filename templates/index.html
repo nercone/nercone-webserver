@@ -3,14 +3,15 @@
 {% block description %}作りたいものを作り、やりたくないことからは逃げる学生{% endblock %}
 {% block extra_head %}
         <style>
-            .aaaa {
-                display: flex;
-                flex-direction: column;
-            }
-            .aaaa::before,
-            .aaaa::after {
-                content: "";
+            main {
                 flex: 1;
+                display: flex;
+            }
+            .aaaa {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             .big-text {
                 margin: 0;
