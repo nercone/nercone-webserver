@@ -29,7 +29,9 @@ templates = Jinja2Templates(directory="templates")
 log_filepath = Path(__file__).parent.joinpath("logs", "main.log")
 logger = ModernLogging("nercone-webserver", filepath=str(log_filepath))
 log_exclude_paths = ["status"]
-allowed_hostnames = ["localhost", "d-g-c.net", "diamondgotcat.net"]
+onion_hostname = "4sbb7xhdn4meuesnqvcreewk6sjnvchrsx4lpnxmnjhz2soat74finid.onion"
+templates.env.globals["onion_site_url"] = f"http://{onion_hostname}/"
+allowed_hostnames = ["localhost", "d-g-c.net", "diamondgotcat.net", onion_hostname]
 daily_phrases = [
     "Markitdownのネーミングセンス良いよね",
     "LinuxディストリビューションはFedoraが最強",
@@ -307,6 +309,7 @@ async def middleware(request: Request, call_next):
             origin_client_host = proxy_route[0]
         exception: Exception | None = None
         response.headers["Server"] = "Nercone Web Server"
+        response.headers["Onion-Location"] = f"http://{onion_hostname}/"
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Access-Control-Allow-Methods"] = "*"
         response.headers["Access-Control-Allow-Headers"] = "*"
@@ -414,6 +417,10 @@ async def middleware(request: Request, call_next):
 @app.api_route("/cu", methods=["GET"])
 async def canonical_url_redirect(request: Request):
     return RedirectResponse(url="https://diamondgotcat.net/")
+
+@app.api_route("/cut", methods=["GET"])
+async def canonical_onion_url_redirect(request: Request):
+    return RedirectResponse(url=f"http://{onion_hostname}/")
 
 @app.api_route("/to/{url_id:path}", methods=["GET", "POST", "HEAD"])
 async def short_url(request: Request, url_id: str):
