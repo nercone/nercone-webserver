@@ -1,3 +1,4 @@
+psutil
 nercone-modern
 fastapi
 jinja2

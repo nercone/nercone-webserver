@@ -2,6 +2,7 @@ import re
 import json
 import uuid
 import shutil
+import psutil
 import random
 import subprocess
 import sqlite3
@@ -131,7 +132,7 @@ def current_year():
     return str(datetime.now(ZoneInfo("Asia/Tokyo")).year)
 templates.env.globals["current_year"] = current_year
 
-def todays_phrase():
+def todays_phrase() -> str:
     today = datetime.now(timezone.utc).date()
     rng = random.Random(str(today))
     return rng.choice(daily_phrases)
@@ -422,6 +423,103 @@ async def canonical_url_redirect(request: Request):
 async def canonical_onion_url_redirect(request: Request):
     return RedirectResponse(url=f"http://{onion_hostname}/")
 
+@app.api_route("/api/v1/status", methods=["GET"])
+async def v1_status(request: Request):
+    virtual_memory = psutil.virtual_memory()
+    swap_memory = psutil.swap_memory()
+    disk_usage = psutil.disk_usage("/")
+    return JSONResponse(
+        {
+            "status": "ok",
+            "access": get_counter(),
+            "phrase": todays_phrase(),
+            "resouces": {
+                "cpu": {
+                    "count": psutil.cpu_count(),
+                    "percent": psutil.cpu_percent(interval=1)
+                },
+                "memory": {
+                    "virtual": {
+                        "total": virtual_memory.total,
+                        "used": virtual_memory.used,
+                        "available": virtual_memory.available,
+                        "percent": virtual_memory.percent
+                    },
+                    "swap": {
+                        "total": swap_memory.total,
+                        "used": swap_memory.used,
+                        "percent": swap_memory.percent
+                    }
+                },
+                "storage": {
+                    "total": disk_usage.total,
+                    "used": disk_usage.used,
+                    "available": disk_usage.free
+                }
+            }
+        },
+        status_code=200
+    )
+
+@app.api_route("/api/v1/shorturl/{url_id:path}", methods=["GET", "POST", "HEAD"])
+async def short_url(request: Request, url_id: str):
+    json_path = Path(__file__).parent / "shorturls.json"
+    if not json_path.exists():
+        return JSONResponse(
+            {
+                "status": "error",
+                "description": "Short URL configuration file not found."
+            },
+            status_code=500
+        )
+    try:
+        with json_path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return JSONResponse(
+            {
+                "status": "error",
+                "description": "Failed to load Short URL configuration."
+            },
+            status_code=500
+        )
+    current_id = url_id.strip().rstrip("/")
+    visited = set()
+    for _ in range(10):
+        if current_id in visited:
+            return JSONResponse(
+                {
+                    "status": "error",
+                    "description": "Circular alias detected."
+                },
+                status_code=500
+            )
+        visited.add(current_id)
+        if current_id not in data:
+            break
+        entry = data[current_id]
+        entry_type = entry.get("type")
+        content = entry.get("content")
+        if entry_type == "redirect":
+            return JSONResponse(
+                {
+                    "status": "ok",
+                    "content": content
+                },
+                status_code=200
+            )
+        elif entry_type == "alias":
+            current_id = content
+        else:
+            break
+    return JSONResponse(
+        {
+            "status": "error",
+            "content": f"Not Found: {current_id}"
+        },
+        status_code=404
+    )
+
 @app.api_route("/to/{url_id:path}", methods=["GET", "POST", "HEAD"])
 async def short_url(request: Request, url_id: str):
     json_path = Path(__file__).parent / "shorturls.json"
@@ -454,10 +552,6 @@ async def short_url(request: Request, url_id: str):
         request=request,
         name="to/404.html"
     )
-
-@app.api_route("/api/v1/status", methods=["GET"])
-async def v1_status(request: Request):
-    return JSONResponse({"status": "ok", "access_count": get_counter()}, status_code=200)
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD"])
 async def default_response(request: Request, full_path: str) -> Response:
