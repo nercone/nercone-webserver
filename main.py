@@ -409,7 +409,7 @@ async def middleware(request: Request, call_next):
             log_level = "ERROR"
             status_code_color = "red"
         if not request.scope['path'].strip("/") in log_exclude_paths:
-            logger.log(f"{ModernColor.color(status_code_color)}{response.status_code}{ModernColor.color('reset')} {access_id} {request_client_host} {ModernColor.color('gray')}{request.url}{ModernColor.color('reset')}", level_text=log_level)
+            logger.log(f"{ModernColor.from_name(status_code_color)}{response.status_code}{ModernColor.from_name('reset')} {access_id} {request_client_host} {ModernColor.from_name('gray')}{request.url}{ModernColor.from_name('reset')}", level_text=log_level)
         return response
     except:
         logger.log("Fatal exception in middleware!!!", level_text="ERROR")
