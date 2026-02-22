@@ -8,25 +8,25 @@ def main():
         "formatters": {
             "default": {
                 "format": "%(asctime)s %(levelname)s %(name)s: %(message)s",
-                "datefmt": "%Y-%m-%d %H:%M:%S",
+                "datefmt": "%Y-%m-%d %H:%M:%S"
             }
         },
         "handlers": {
             "file": {
                 "class": "logging.FileHandler",
                 "filename": "logs/uvicorn.log",
-                "formatter": "default",
+                "formatter": "default"
             },
             "console": {
                 "class": "logging.StreamHandler",
                 "stream": "ext://sys.stdout",
-                "formatter": "default",
+                "formatter": "default"
             }
         },
         "loggers": {
             "uvicorn": {"handlers": ["file", "console"], "level": "INFO", "propagate": False},
             "uvicorn.error": {"handlers": ["file", "console"], "level": "INFO", "propagate": False},
-            "uvicorn.access": {"handlers": ["file", "console"], "level": "INFO", "propagate": False},
+            "uvicorn.access": {"handlers": ["file", "console"], "level": "INFO", "propagate": False}
         }
     }
     uvicorn.run("nercone_webserver.server:app", host="0.0.0.0", port=8080, workers=1, server_header=False, log_config=log_config)
