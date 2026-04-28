@@ -54,7 +54,7 @@ templates.env.globals["get_daily_quote"] = get_daily_quote
 def resolve_static_file(full_path: str) -> Path | None:
     base_dir = Path.cwd().joinpath("public")
     target_path = (base_dir / full_path.lstrip('/')).resolve()
-    if not str(target_path).startswith(str(base_dir.resolve())):
+    if not target_path.is_relative_to(base_dir.resolve()):
         raise PermissionError()
     return target_path if target_path.is_file() else None
 
@@ -190,43 +190,41 @@ async def default_response(request: Request, full_path: str) -> Response:
     elif original_path.endswith(".md"):
         markdown_candidates = [original_path.lstrip('/')]
     else:
-        markdown_candidates = [f"{original_path.strip('/')}.md", f"{original_path.strip('/')}/index.md"]
+        markdown_candidates = [f"{original_path.strip('/')}.md", f"{original_path.strip('/')}/index.md", f"{original_path.strip('/')}/README.md"]
 
     for name in markdown_candidates:
         try:
-            markdown_path = Path.cwd().joinpath("public", name)
-            if not markdown_path.is_relative_to(Path.cwd().joinpath("public")):
-                continue
-            with markdown_path.open("r") as f:
-                markdown = f.read()
+            if markdown_path := resolve_static_file(name):
+                with markdown_path.open("r") as f:
+                    markdown = f.read()
 
-            if markdown_mode:
-                response = PlainTextResponse(markdown, status_code=200, media_type="text/markdown")
-            else:
-                if not markdown.startswith("---"):
-                    front = {}
-                    body = markdown
+                if markdown_mode:
+                    response = PlainTextResponse(markdown, status_code=200, media_type="text/markdown")
                 else:
-                    end = markdown.find("\n---", 3)
-                    if end == -1:
+                    if not markdown.startswith("---"):
                         front = {}
                         body = markdown
                     else:
-                        front = yaml.safe_load(markdown[3:end]) or {}
-                        body = markdown[end+4:].lstrip("\n")
+                        end = markdown.find("\n---", 3)
+                        if end == -1:
+                            front = {}
+                            body = markdown
+                        else:
+                            front = yaml.safe_load(markdown[3:end]) or {}
+                            body = markdown[end+4:].lstrip("\n")
 
-                html = htmlitdown(body)
-                source = f"{{% extends \"/base.html\" %}}\n"
-                for block in front:
-                    source += f"{{% block {block} %}}{front[block]}{{% endblock %}}\n"
-                source += f"{{% block content %}}\n{html}\n{{% endblock %}}\n"
+                    html = htmlitdown(body)
+                    source = f"{{% extends \"/base.html\" %}}\n"
+                    for block in front:
+                        source += f"{{% block {block} %}}{front[block]}{{% endblock %}}\n"
+                    source += f"{{% block content %}}\n{html}\n{{% endblock %}}\n"
 
-                content = templates.env.from_string(source).render(request=request)
-                response = Response(content=content, status_code=200, media_type="text/html")
+                    content = templates.env.from_string(source).render(request=request)
+                    response = Response(content=content, status_code=200, media_type="text/html")
 
-            accesscounter.increase()
-            return response
-        except FileNotFoundError:
+                accesscounter.increase()
+                return response
+        except PermissionError:
             continue
 
     try: 
