@@ -123,7 +123,7 @@ class Middleware:
             response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
         if "content-security-policy" not in response.headers:
-            response.headers["Content-Security-Policy"] = "default-src 'self' assets.nercone.dev; script-src assets.nercone.dev; style-src assets.nercone.dev fonts.googleapis.com 'unsafe-inline'; font-src fonts.gstatic.com; img-src 'self' assets.nercone.dev t3tra.dev data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+            response.headers["Content-Security-Policy"] = "default-src 'self' assets.nercone.dev; script-src assets.nercone.dev 'unsafe-inline'; style-src assets.nercone.dev fonts.googleapis.com 'unsafe-inline'; font-src fonts.gstatic.com; img-src 'self' assets.nercone.dev t3tra.dev data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
 
         if "permissions-policy" not in response.headers:
             response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=()"
