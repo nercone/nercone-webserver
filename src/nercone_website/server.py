@@ -181,7 +181,7 @@ async def thumbnail(request: Request, path: str) -> Response:
     font_files = [
         str(fonts_dir / "MesloBIZUD-Regular.ttf"),
         str(fonts_dir / "InterBIZUD-Regular.ttf"),
-        str(fonts_dir / "InterBIZUD-Bold.ttf"),
+        str(fonts_dir / "InterBIZUD-Bold.ttf")
     ]
     png = resvg_py.svg_to_bytes(svg, font_files=font_files, width=1200, height=630)
     return Response(content=png, media_type="image/png")
@@ -190,18 +190,15 @@ async def thumbnail(request: Request, path: str) -> Response:
 async def default_response(request: Request, full_path: str) -> Response:
     try:
         if page := resolve_page(full_path):
-            markdown_mode = False
             markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
-
-            if "text/markdown" in request.headers.get("accept", "").lower():
-                markdown_mode = True
-            elif any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua]):
-                markdown_mode = True
-            elif full_path.endswith(".md"):
-                markdown_mode = True
+            markdown_conditions = [
+                full_path.endswith(".md"),
+                "text/markdown" in request.headers.get("accept", "").lower(),
+                any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])
+            ]
 
             if page.endswith(".html"):
-                if markdown_mode:
+                if any(markdown_conditions):
                     content = templates.env.get_template(page).render(request=request)
                     soup = BeautifulSoup(content, "html.parser")
                     main = str(soup.find("main")) if soup.find("main") else content
@@ -214,7 +211,7 @@ async def default_response(request: Request, full_path: str) -> Response:
                 with Directories.public.joinpath(page).open("r") as f:
                     markdown = f.read()
 
-                if markdown_mode:
+                if any(markdown_conditions):
                     response = PlainTextResponse(markdown, status_code=200, media_type="text/markdown")
 
                 else:

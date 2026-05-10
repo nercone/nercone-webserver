@@ -157,11 +157,11 @@ class Middleware:
         elif "image/svg+xml" in content_type:
             minify_start = time.perf_counter()
             try:
-                options = scour.generateDefaultOptions()
-                options.newlines = False
-                options.shorten_ids = True
-                options.strip_comments = True
-                response.body = scour.scourString(response.body.decode("utf-8", errors="replace"), options).encode("utf-8")
+                minify_options = scour.generateDefaultOptions()
+                minify_options.newlines = False
+                minify_options.shorten_ids = True
+                minify_options.strip_comments = True
+                response.body = scour.scourString(response.body.decode("utf-8", errors="replace"), minify_options).encode("utf-8")
             except Exception:
                 pass
             timings["minify"] = timings.get("minify", 0.0) + (time.perf_counter() - minify_start) * 1000
