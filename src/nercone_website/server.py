@@ -235,7 +235,7 @@ async def default_response(request: Request, full_path: str) -> Response:
                     source = f"{{% extends \"/base.html\" %}}\n"
                     for block in front:
                         source += f"{{% block {block} %}}{front[block]}{{% endblock %}}\n"
-                    source += f"{{% block content %}}\n{html}\n{{% endblock %}}\n"
+                    source += f"{{% block main %}}\n{html}\n{{% endblock %}}\n"
 
                     content = templates.env.from_string(source).render(request=request)
                     response = Response(content=content, status_code=200, media_type="text/html")
