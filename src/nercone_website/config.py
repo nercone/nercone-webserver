@@ -1,6 +1,7 @@
 import ipaddress
 import subprocess
 from pathlib import Path
+from fastapi import Request, Response
 
 class Directories:
     base = Path.cwd()
@@ -89,3 +90,25 @@ class AccessSources:
                 return False
 
         return True
+
+class UserOptions:
+    def __init__(self, request: Request):
+        self.request = request
+
+    def __contains__(self, key: str):
+        return key in self.request.query_params or key in self.request.cookies
+
+    def __len__(self):
+        return len(self.request.cookies | self.request.query_params)
+
+    def get(self, key: str):
+        query = self.request.query_params.get(key, None)
+        cookie = self.request.cookies.get(key, None)
+        return query or cookie
+
+    def apply(self, response: Response):
+        queries = self.request.query_params
+        cookies = self.request.cookies
+        for key in queries:
+            if key in cookies and cookies[key] != (queries[key]):
+                response.set_cookie(key, queries[key], samesite="lax")

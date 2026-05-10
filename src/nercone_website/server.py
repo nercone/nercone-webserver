@@ -15,7 +15,6 @@ from zoneinfo import ZoneInfo
 from fastapi import FastAPI, Request, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import PlainTextResponse, JSONResponse, FileResponse, RedirectResponse
-from jinja2.exceptions import TemplateNotFound
 from .error import error_page
 from .config import Directories, Files, Repositories, Hostnames
 from .database import AccessCounter
@@ -26,16 +25,17 @@ app.add_middleware(Middleware)
 templates = Jinja2Templates(directory=Directories.public)
 markitdown = MarkItDown()
 accesscounter = AccessCounter()
-templates.env.globals["get_access_count"] = accesscounter.get
-templates.env.globals["server_version"] = Repositories.Server.version
-templates.env.globals["contents_version"] = Repositories.Contents.version
-templates.env.globals["onion_site_url"] = f"http://{Hostnames.onion}/"
-templates.env.filters["re_sub"] = lambda s, pattern, repl: re.sub(pattern, repl, s)
 
 class CustomHTMLRenderer(mistune.HTMLRenderer):
     def block_code(self, code, **attrs):
         return f'<pre>{mistune.escape(code)}</pre>\n'
 htmlitdown = mistune.create_markdown(renderer=CustomHTMLRenderer(escape=False), plugins=["table"])
+
+templates.env.globals["get_access_count"] = accesscounter.get
+templates.env.globals["server_version"] = Repositories.Server.version
+templates.env.globals["contents_version"] = Repositories.Contents.version
+templates.env.globals["onion_site_url"] = f"http://{Hostnames.onion}/"
+templates.env.filters["re_sub"] = lambda s, pattern, repl: re.sub(pattern, repl, s)
 
 def this_year() -> int:
     return datetime.now(ZoneInfo("Asia/Tokyo")).year
@@ -55,24 +55,53 @@ def get_daily_quote() -> str:
         return "GReeeeN KA-RA-DA"
 templates.env.globals["get_daily_quote"] = get_daily_quote
 
-def resolve_static_file(full_path: str) -> Path | None:
+def resolve_file(full_path: str) -> Path | None:
     path = Directories.public.joinpath(full_path).resolve()
     if not path.is_relative_to(Directories.public):
         raise PermissionError()
     return path if path.is_file() else None
 
-def resolve_shorturl(shorturls: dict, full_path: str) -> str | None:
-    current_id = full_path.strip().rstrip("/")
-    visited = set()
-    for _ in range(10):
-        if current_id in visited or current_id not in shorturls:
-            return None
-        visited.add(current_id)
-        entry = shorturls[current_id]
-        if entry["type"] in ["redirect", "alias"]:
+def resolve_page(full_path: str) -> str | None:
+    if full_path in ["", "/"]:
+        template_candidates = ["index.html", "README.html"]
+        markdown_candidates = ["index.md",   "README.md"]
+    elif full_path.endswith(".html"):
+        template_candidates = [f"{full_path[:-5].strip('/')}.html"]
+        markdown_candidates = [f"{full_path[:-5].strip('/')}.md"]
+    elif full_path.endswith(".md"):
+        template_candidates = [f"{full_path[:-3].strip('/')}.html"]
+        markdown_candidates = [f"{full_path[:-3].strip('/')}.md"]
+    else:
+        template_candidates = [f"{full_path.strip('/')}.html", f"{full_path.strip('/')}/index.html", f"{full_path.strip('/')}/README.html"]
+        markdown_candidates = [f"{full_path.strip('/')}.md",   f"{full_path.strip('/')}/index.md",   f"{full_path.strip('/')}/README.md"]
+
+    candidates = template_candidates + markdown_candidates
+    for candidate in candidates:
+        if file := resolve_file(candidate):
+            return str(file.relative_to(Directories.public))
+
+    return None
+
+def resolve_shorturl(full_path: str) -> str | None:
+    max_retry = 10
+
+    if Files.shorturls.is_file():
+        shorturls = json.load(Files.shorturls.open("r", encoding="utf-8"))
+
+        current = full_path.strip("/")
+        visited = set()
+
+        for _ in range(max_retry):
+            if current in visited or current not in shorturls:
+                return None
+            visited.add(current)
+
+            entry = shorturls[current]
             if entry["type"] == "redirect":
                 return entry["content"]
-            current_id = entry["content"]
+            elif entry["type"] == "alias":
+                current = entry["content"]
+
     return None
 
 @app.api_route("/ping", methods=["GET"])
@@ -159,60 +188,35 @@ async def thumbnail(request: Request, path: str) -> Response:
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD"])
 async def default_response(request: Request, full_path: str) -> Response:
-    if not full_path.endswith(".html") and not full_path.endswith(".md"):
-        try:
-            if static := resolve_static_file(full_path):
-                return FileResponse(static)
-        except PermissionError:
-            return error_page(templates, request, 403, "何をしてるんです？脆弱性報告のためならいいのですが、データ盗んで悪用するためなら今すぐにやめてくださいね？", "ディレクトリトラバーサルね、知ってる。公開してないところ覗きたいの？えっt")
+    try:
+        if page := resolve_page(full_path):
+            markdown_mode = False
+            markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
 
-    markdown_mode = False
-    markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
+            if "text/markdown" in request.headers.get("accept", "").lower():
+                markdown_mode = True
+            elif any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua]):
+                markdown_mode = True
+            elif full_path.endswith(".md"):
+                markdown_mode = True
 
-    if "text/markdown" in request.headers.get("accept", "").lower():
-        markdown_mode = True
-    elif any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua]):
-        markdown_mode = True
-    elif full_path.endswith(".md"):
-        markdown_mode = True
-
-    if full_path in ["", "/"]:
-        template_candidates = ["index.html", "README.html"]
-        markdown_candidates = ["index.md",   "README.md"]
-    elif full_path.endswith(".html"):
-        template_candidates = [f"{full_path[:-5].strip('/')}.html"]
-        markdown_candidates = [f"{full_path[:-5].strip('/')}.md"]
-    elif full_path.endswith(".md"):
-        template_candidates = [f"{full_path[:-3].strip('/')}.html"]
-        markdown_candidates = [f"{full_path[:-3].strip('/')}.md"]
-    else:
-        template_candidates = [f"{full_path.strip('/')}.html", f"{full_path.strip('/')}/index.html", f"{full_path.strip('/')}/README.html"]
-        markdown_candidates = [f"{full_path.strip('/')}.md",   f"{full_path.strip('/')}/index.md",   f"{full_path.strip('/')}/README.md"]
-
-    def try_templates():
-        for name in template_candidates:
-            try:
+            if page.endswith(".html"):
                 if markdown_mode:
-                    content = templates.env.get_template(name).render(request=request)
+                    content = templates.env.get_template(page).render(request=request)
                     soup = BeautifulSoup(content, "html.parser")
                     main = str(soup.find("main")) if soup.find("main") else content
                     markdown = markitdown.convert_stream(io.BytesIO(main.encode("utf-8")), file_extension=".html")
-                    return PlainTextResponse(markdown.text_content, status_code=200, media_type="text/markdown")
+                    response = PlainTextResponse(markdown.text_content, status_code=200, media_type="text/markdown")
                 else:
-                    return templates.TemplateResponse(status_code=200, request=request, name=name)
-            except TemplateNotFound:
-                continue
-        return None
+                    response = templates.TemplateResponse(status_code=200, request=request, name=page)
 
-    def try_markdowns():
-        for name in markdown_candidates:
-            try:
-                if not (markdown_path := resolve_static_file(name)):
-                    continue
-                with markdown_path.open("r") as f:
+            elif page.endswith(".md"):
+                with Directories.public.joinpath(page).open("r") as f:
                     markdown = f.read()
+
                 if markdown_mode:
-                    return PlainTextResponse(markdown, status_code=200, media_type="text/markdown")
+                    response = PlainTextResponse(markdown, status_code=200, media_type="text/markdown")
+
                 else:
                     if not markdown.startswith("---"):
                         front = {}
@@ -234,23 +238,19 @@ async def default_response(request: Request, full_path: str) -> Response:
                     source += f"{{% block content %}}\n{html}\n{{% endblock %}}\n"
 
                     content = templates.env.from_string(source).render(request=request)
-                    return Response(content=content, status_code=200, media_type="text/html")
-            except PermissionError:
-                return error_page(templates, request, 403, "何をしてるんです？脆弱性報告のためならいいのですが、データ盗んで悪用するためなら今すぐにやめてくださいね？", "ディレクトリトラバーサルね、知ってる。公開してないところ覗きたいの？えっt")
-        return None
+                    response = Response(content=content, status_code=200, media_type="text/html")
 
-    for try_fn in ([try_markdowns, try_templates] if markdown_mode else [try_templates, try_markdowns]):
-        if response := try_fn():
             accesscounter.increase()
             return response
 
-    if Files.shorturls.is_file():
-        try:
-            shorturls = json.load(Files.shorturls.open("r", encoding="utf-8"))
-        except Exception:
-            return error_page(templates, request, 500, "短縮URLの処理のためのJSONファイルを正常に読み込めませんでした。", "なにこの設定ファイル読めないじゃない！")
+        else:
+            if file := resolve_file(full_path):
+                return FileResponse(file)
 
-        if result := resolve_shorturl(shorturls, full_path):
-            return RedirectResponse(url=result)
+    except PermissionError:
+        return error_page(templates, request, 403, "何をしてるんです？脆弱性報告のためならいいのですが、データ盗んで悪用するためなら今すぐにやめてくださいね？", "ディレクトリトラバーサルね、知ってる。公開してないところ覗きたいの？えっt")
+
+    if result := resolve_shorturl(full_path):
+        return RedirectResponse(url=result)
 
     return error_page(templates, request, 404, "リクエストしたページは現在ご利用になれません。削除/移動されたか、URLが間違っている可能性があります。", "そんなページ知らないっ！")
