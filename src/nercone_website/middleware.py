@@ -98,10 +98,13 @@ class Middleware:
             content=b"".join(body_parts),
             status_code=status_code,
         )
+
         if response.status_code == 404 and path != "/" and path.endswith("/"):
             return await self._get_response(scope, cached_receive, path.rstrip("/"), timings, key)
+
         for k, v in resp_headers:
             response.headers.raw.append((k, v))
+
         return response
 
     async def _read_body(self, receive: Receive) -> bytes:
