@@ -237,10 +237,11 @@ async def default_response(request: Request, full_path: str) -> Response:
         elif file := resolve_file(full_path):
             return FileResponse(file)
 
+        elif url := resolve_shorturl(full_path):
+            return RedirectResponse(url)
+
+        else:
+            return error_page(templates, request, 404, "リクエストしたページは現在ご利用になれません。削除/移動されたか、URLが間違っている可能性があります。", "そんなページ知らないっ！")
+
     except PermissionError:
         return error_page(templates, request, 403, "何をしてるんです？脆弱性報告のためならいいのですが、データ盗んで悪用するためなら今すぐにやめてくださいね？", "ディレクトリトラバーサルね、知ってる。公開してないところ覗きたいの？えっt")
-
-    if result := resolve_shorturl(full_path):
-        return RedirectResponse(url=result)
-
-    return error_page(templates, request, 404, "リクエストしたページは現在ご利用になれません。削除/移動されたか、URLが間違っている可能性があります。", "そんなページ知らないっ！")
