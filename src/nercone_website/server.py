@@ -191,7 +191,7 @@ async def default_response(request: Request, full_path: str) -> Response:
     try:
         if page := resolve_page(full_path):
             markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
-            markdown_mode = any([full_path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])])
+            markdown_mode = any([full_path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])]) and not full_path.endswith(".md")
 
             if page.endswith(".html"):
                 if markdown_mode:
