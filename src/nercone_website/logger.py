@@ -28,7 +28,8 @@ def log_access(scope: Scope, id: str = None, write: bool = False) -> tuple[dict,
         "headers": {k.decode(): v.decode() for k, v in headers.items()}
     }
     if write:
-        write_log(log)
+        with Files.Logs.access.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(log, ensure_ascii=False) + "\n")
     return log
 
 def finalize_log(log: dict, status_code: int, start_time: float, timings: dict | None = None, write: bool = True) -> dict:
@@ -37,9 +38,6 @@ def finalize_log(log: dict, status_code: int, start_time: float, timings: dict |
     if timings:
         log["timings"] = {k: round(v, 3) for k, v in timings.items()}
     if write:
-        write_log(log)
+        with Files.Logs.access.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(log, ensure_ascii=False) + "\n")
     return log
-
-def write_log(log: dict) -> None:
-    with Files.Logs.access.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(log, ensure_ascii=False) + "\n")

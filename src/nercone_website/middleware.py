@@ -5,6 +5,7 @@ from scour import scour
 from fastapi import Response
 from fastapi.responses import PlainTextResponse
 from starlette.types import Scope, ASGIApp, Receive, Send
+
 from .logger import log_access, finalize_log
 from .config import Repositories, Hostnames, AccessSources
 

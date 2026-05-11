@@ -1,37 +1,25 @@
-import io
 import re
-import json
-import yaml
 import random
-import mistune
 import resvg_py
 import requests
 from html import escape
-from pathlib import Path
-from bs4 import BeautifulSoup
-from markitdown import MarkItDown
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, Request, Response
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import PlainTextResponse, JSONResponse, FileResponse, RedirectResponse
-from .error import error_page
+from fastapi.responses import PlainTextResponse, JSONResponse
+
 from .config import Directories, Files, Repositories, Hostnames
+from .renderer import render
 from .database import AccessCounter
 from .middleware import Middleware
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 app.add_middleware(Middleware)
 templates = Jinja2Templates(directory=Directories.public)
-markitdown = MarkItDown()
-accesscounter = AccessCounter()
+access_counter = AccessCounter()
 
-class CustomHTMLRenderer(mistune.HTMLRenderer):
-    def block_code(self, code, **attrs):
-        return f'<pre>{mistune.escape(code)}</pre>\n'
-htmlitdown = mistune.create_markdown(renderer=CustomHTMLRenderer(escape=False), plugins=["table", "strikethrough", "task_lists", "footnotes"])
-
-templates.env.globals["get_access_count"] = accesscounter.get
+templates.env.globals["get_access_count"] = access_counter.get
 templates.env.globals["server_version"] = Repositories.Server.version
 templates.env.globals["contents_version"] = Repositories.Contents.version
 templates.env.globals["onion_site_url"] = f"http://{Hostnames.onion}/"
@@ -55,55 +43,6 @@ def get_daily_quote() -> str:
         return "GReeeeN KA-RA-DA"
 templates.env.globals["get_daily_quote"] = get_daily_quote
 
-def resolve_file(full_path: str) -> Path | None:
-    path = Directories.public.joinpath(full_path).resolve()
-    if not path.is_relative_to(Directories.public):
-        raise PermissionError()
-    return path if path.is_file() else None
-
-def resolve_page(full_path: str) -> str | None:
-    if full_path in ["", "/"]:
-        template_candidates = ["index.html", "README.html"]
-        markdown_candidates = ["index.md",   "README.md"]
-    elif full_path.endswith(".html"):
-        template_candidates = [f"{full_path[:-5].strip('/')}.html"]
-        markdown_candidates = [f"{full_path[:-5].strip('/')}.md"]
-    elif full_path.endswith(".md"):
-        template_candidates = [f"{full_path[:-3].strip('/')}.html"]
-        markdown_candidates = [f"{full_path[:-3].strip('/')}.md"]
-    else:
-        template_candidates = [f"{full_path.strip('/')}.html", f"{full_path.strip('/')}/index.html", f"{full_path.strip('/')}/README.html"]
-        markdown_candidates = [f"{full_path.strip('/')}.md",   f"{full_path.strip('/')}/index.md",   f"{full_path.strip('/')}/README.md"]
-
-    candidates = template_candidates + markdown_candidates
-    for candidate in candidates:
-        if file := resolve_file(candidate):
-            return str(file.relative_to(Directories.public))
-
-    return None
-
-def resolve_shorturl(full_path: str) -> str | None:
-    max_retry = 10
-
-    if Files.shorturls.is_file():
-        shorturls = json.load(Files.shorturls.open("r", encoding="utf-8"))
-
-        current = full_path.strip("/")
-        visited = set()
-
-        for _ in range(max_retry):
-            if current in visited or current not in shorturls:
-                return None
-            visited.add(current)
-
-            entry = shorturls[current]
-            if entry["type"] == "redirect":
-                return entry["content"]
-            elif entry["type"] == "alias":
-                current = entry["content"]
-
-    return None
-
 @app.api_route("/ping", methods=["GET"])
 async def ping(request: Request):
     return PlainTextResponse("pong!", status_code=200)
@@ -119,7 +58,7 @@ async def status(request: Request):
             "status": "ok",
             "version": {"server": Repositories.Server.version, "content": Repositories.Contents.version},
             "quote": get_daily_quote(),
-            "counter": accesscounter.get()
+            "counter": access_counter.get()
         },
         status_code=200
     )
@@ -184,64 +123,4 @@ async def thumbnail(request: Request, path: str) -> Response:
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD"])
 async def default_response(request: Request, full_path: str) -> Response:
-    try:
-        if page := resolve_page(full_path):
-            markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
-            markdown_mode = any([full_path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])]) and not full_path.endswith(".md")
-
-            if page.endswith(".html"):
-                if markdown_mode:
-                    content = templates.env.get_template(page).render(request=request)
-                    soup = BeautifulSoup(content, "html.parser")
-                    main = str(soup.find("main")) if soup.find("main") else content
-                    markdown = markitdown.convert_stream(io.BytesIO(main.encode("utf-8")), file_extension=".html")
-                    response = PlainTextResponse(markdown.text_content, status_code=200, media_type="text/markdown")
-                else:
-                    content = templates.env.get_template(page).render(request=request)
-                    response = PlainTextResponse(content, status_code=200, media_type="text/html")
-
-            elif page.endswith(".md"):
-                with Directories.public.joinpath(page).open("r") as f:
-                    markdown = f.read()
-
-                if markdown_mode:
-                    content = templates.env.from_string(markdown).render(request=request)
-                    response = PlainTextResponse(content, status_code=200, media_type="text/markdown")
-
-                else:
-                    if not markdown.startswith("---"):
-                        front = {}
-                        body = markdown
-                    else:
-                        end = markdown.find("\n---", 3)
-                        if end == -1:
-                            front = {}
-                            body = markdown
-                        else:
-                            front = yaml.safe_load(markdown[3:end]) or {}
-                            body = markdown[end+4:].lstrip("\n")
-
-                    body_rendered = templates.env.from_string(body).render(request=request)
-                    html = htmlitdown(body_rendered)
-                    source = f"{{% extends \"/base.html\" %}}\n"
-                    for block in front:
-                        source += f"{{% block {block} %}}{front[block]}{{% endblock %}}\n"
-                    source += f"{{% block main %}}\n{html}\n{{% endblock %}}\n"
-
-                    content = templates.env.from_string(source).render(request=request)
-                    response = Response(content=content, status_code=200, media_type="text/html")
-
-            accesscounter.increase()
-            return response
-
-        elif file := resolve_file(full_path):
-            return FileResponse(file)
-
-        elif url := resolve_shorturl(full_path):
-            return RedirectResponse(url)
-
-        else:
-            return error_page(templates, request, 404, "リクエストしたページは現在ご利用になれません。削除/移動されたか、URLが間違っている可能性があります。", "そんなページ知らないっ！")
-
-    except PermissionError:
-        return error_page(templates, request, 403, "何をしてるんです？脆弱性報告のためならいいのですが、データ盗んで悪用するためなら今すぐにやめてくださいね？", "ディレクトリトラバーサルね、知ってる。公開してないところ覗きたいの？えっt")
+    return render(full_path, templates=templates, access_counter=access_counter, request=request)
