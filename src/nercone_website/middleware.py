@@ -115,30 +115,8 @@ class Middleware:
         return body
 
     async def _send(self, response: Response, scope, receive, send, timings: dict, request_start: float):
+
         content_type = response.headers.get("content-type", "")
-
-        response.headers["Server"] = f"nercone.dev ({Repositories.Server.version})"
-        response.headers["Onion-Location"] = f"http://{Hostnames.onion}/"
-        response.headers["Link"] = "<https://nercone.dev/sitemap.xml>; rel=\"sitemap\", <https://nercone.dev/robots.txt>; rel=\"robots\""
-
-        if "access-control-allow-origin" not in response.headers:
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Access-Control-Allow-Methods"] = "*"
-            response.headers["Access-Control-Allow-Headers"] = "*"
-
-        if "referrer-policy" not in response.headers:
-            response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-
-        if "content-security-policy" not in response.headers:
-            response.headers["Content-Security-Policy"] = "default-src 'self' assets.nercone.dev; script-src 'self' assets.nercone.dev 'unsafe-inline'; style-src 'self' assets.nercone.dev fonts.googleapis.com 'unsafe-inline'; font-src 'self' assets.nercone.dev fonts.gstatic.com; img-src 'self' assets.nercone.dev t3tra.dev drsb.f5.si data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
-
-        if "permissions-policy" not in response.headers:
-            response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=()"
-
-        if any(content_type.startswith(t) for t in ["text/html", "text/css", "text/javascript", "application/javascript"]):
-            response.headers["Cache-Control"] = "no-cache"
-        else:
-            response.headers["Cache-Control"] = "public, max-age=3600"
 
         if "text/css" in content_type:
             minify_start = time.perf_counter()
@@ -147,6 +125,7 @@ class Middleware:
             except Exception:
                 pass
             timings["minify"] = timings.get("minify", 0.0) + (time.perf_counter() - minify_start) * 1000
+
         elif any(content_type.startswith(t) for t in ["text/javascript", "application/javascript"]):
             minify_start = time.perf_counter()
             try:
@@ -154,7 +133,8 @@ class Middleware:
             except Exception:
                 pass
             timings["minify"] = timings.get("minify", 0.0) + (time.perf_counter() - minify_start) * 1000
-        elif "image/svg+xml" in content_type:
+
+        elif "image/svg" in content_type:
             minify_start = time.perf_counter()
             try:
                 minify_options = scour.generateDefaultOptions()
@@ -165,12 +145,46 @@ class Middleware:
             except Exception:
                 pass
             timings["minify"] = timings.get("minify", 0.0) + (time.perf_counter() - minify_start) * 1000
-        response.headers["Content-Length"] = str(len(response.body))
+
+        def set_header(key: str, value: str, override: bool = True):
+            if override or key.lower() not in response.headers:
+                response.headers[key.lower()] == value
+
+        set_header("Content-Length", str(len(response.body)))
+
+        set_header("Server", f"nercone.dev ({Repositories.Server.version})")
+        set_header("Onion-Location", f"http://{Hostnames.onion}/")
+        set_header("Link", "<https://nercone.dev/sitemap.xml>; rel=\"sitemap\", <https://nercone.dev/robots.txt>; rel=\"robots\"")
+
+        set_header("Access-Control-Allow-Origin", "*", override=False)
+        set_header("Access-Control-Allow-Methods", "*", override=False)
+        set_header("Access-Control-Allow-Headers", "*", override=False)
+
+        set_header("Referrer-Policy", "strict-origin-when-cross-origin")
+        set_header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=()", override=False)
+        content_security_policy = """
+        default-src 'self' assets.nercone.dev;
+        script-src 'self' assets.nercone.dev;
+        style-src 'self' assets.nercone.dev fonts.googleapis.com;
+        font-src 'self' assets.nercone.dev fonts.gstatic.com;
+        img-src 'self' assets.nercone.dev t3tra.dev drsb.f5.si data:;
+        connect-src 'self';
+        frame-ancestors 'self';
+        base-uri 'self';
+        form-action 'self';
+        upgrade-insecure-requests;
+        """
+        set_header("Content-Security-Policy", " ".join([line.strip() for line in content_security_policy.strip().split("\n")]), override=False)
+
+        if any(content_type.startswith(t) for t in ["text/html", "text/css", "text/javascript", "application/javascript"]):
+            set_header("Cache-Control", "no-cache", override=False)
+        else:
+            set_header("Cache-Control", "public, max-age=3600", override=False)
 
         timings["total"] = (time.perf_counter() - request_start) * 1000
         timings_header = ", ".join([f"{name};dur={round(value, 3)}" for name, value in timings.items()])
         if "Server-Timing" in response.headers:
             timings_header = response.headers.get("Server-Timing", "").strip() + ", " + timings_header
-        response.headers["Server-Timing"] = timings_header
+        set_header("Server-Timing", timings_header)
 
         await response(scope, receive, send)
