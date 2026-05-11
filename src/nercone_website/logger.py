@@ -5,7 +5,7 @@ from starlette.types import Scope
 from datetime import datetime, timezone
 from .config import Files, AccessSources
 
-def log_access(scope: Scope, id: str, write: bool = False) -> tuple[dict, float]:
+def log_access(scope: Scope, id: str = None, write: bool = False) -> tuple[dict, float]:
     client = scope.get("client") or ("", 0)
     server = scope.get("server") or ("", 0)
     headers = dict(scope.get("headers", []))
