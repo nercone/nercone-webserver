@@ -148,7 +148,7 @@ class Middleware:
 
         def set_header(key: str, value: str, override: bool = True):
             if override or key.lower() not in response.headers:
-                response.headers[key.lower()] == value
+                response.headers[key.lower()] = value
 
         set_header("Content-Length", str(len(response.body)))
 
