@@ -35,12 +35,10 @@ class Middleware:
             return
 
         timings: dict[str, float] = {}
-        scope["log"] = log_access(scope)
         request_start = time.perf_counter()
+        trusted = AccessSources.is_trusted(scope.get("client", ("", 0))[0], headers.get(b"x-forwarded-for", b"").decode())
 
-        direct_ip = scope.get("client", ("", 0))[0]
-        xfwd = headers.get(b"x-forwarded-for", b"").decode()
-        trusted = AccessSources.is_trusted(direct_ip, xfwd)
+        scope["log"] = log_access(scope)
 
         if not trusted and not any([hostname.endswith(candidate) for candidate in Hostnames.all]):
             response = PlainTextResponse("許可されていないホスト名でのアクセスです。", status_code=400)
@@ -51,6 +49,7 @@ class Middleware:
         recv_start = time.perf_counter()
         body = await self._read_body(receive)
         timings["recv"] = (time.perf_counter() - recv_start) * 1000
+
         async def cached_receive():
             return {"type": "http.request", "body": body, "more_body": False}
 
@@ -162,6 +161,7 @@ class Middleware:
 
         set_header("Referrer-Policy", "strict-origin-when-cross-origin")
         set_header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=()", override=False)
+
         content_security_policy = """
         default-src 'self' assets.nercone.dev;
         script-src 'self' assets.nercone.dev;

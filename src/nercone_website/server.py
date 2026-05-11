@@ -118,8 +118,8 @@ async def status(request: Request):
         {
             "status": "ok",
             "version": {"server": Repositories.Server.version, "content": Repositories.Contents.version},
-            "daily_quote": get_daily_quote(),
-            "access_count": accesscounter.get()
+            "quote": get_daily_quote(),
+            "counter": accesscounter.get()
         },
         status_code=200
     )
