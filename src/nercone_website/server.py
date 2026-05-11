@@ -29,7 +29,7 @@ accesscounter = AccessCounter()
 class CustomHTMLRenderer(mistune.HTMLRenderer):
     def block_code(self, code, **attrs):
         return f'<pre>{mistune.escape(code)}</pre>\n'
-htmlitdown = mistune.create_markdown(renderer=CustomHTMLRenderer(escape=False), plugins=["table"])
+htmlitdown = mistune.create_markdown(renderer=CustomHTMLRenderer(escape=False), plugins=["table", "strikethrough", "task_lists", "footnotes"])
 
 templates.env.globals["get_access_count"] = accesscounter.get
 templates.env.globals["server_version"] = Repositories.Server.version
