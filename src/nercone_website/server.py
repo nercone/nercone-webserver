@@ -169,20 +169,20 @@ async def thumbnail(request: Request, path: str) -> Response:
     parts = [p for p in path.strip("/").split("/") if p]
     path_display = "nercone.dev / " + " / ".join(parts) if parts else "nercone.dev"
 
-    svg_filename = "error.svg" if template_type == "error" else "normal.svg"
-    fonts_dir = Directories.public.joinpath("assets", "fonts")
+    font_dir = Directories.public.joinpath("assets", "fonts")
+    font_files = [
+        str(font_dir / "MesloBIZUD-Regular.ttf"),
+        str(font_dir / "InterBIZUD-Regular.ttf"),
+        str(font_dir / "InterBIZUD-Bold.ttf")
+    ]
 
-    svg_path = Directories.public.joinpath("assets", "images", "thumbnails", svg_filename)
-    svg = svg_path.read_text(encoding="utf-8")
+    svg_file = Directories.public.joinpath("assets", "images", "thumbnails", "error.svg" if template_type == "error" else "normal.svg")
+
+    svg = svg_file.read_text(encoding="utf-8")
     svg = svg.replace("__PATH__", escape(path_display))
     svg = svg.replace("__TITLE__", escape(title))
     svg = svg.replace("__DESCRIPTION__", escape(description))
 
-    font_files = [
-        str(fonts_dir / "MesloBIZUD-Regular.ttf"),
-        str(fonts_dir / "InterBIZUD-Regular.ttf"),
-        str(fonts_dir / "InterBIZUD-Bold.ttf")
-    ]
     png = resvg_py.svg_to_bytes(svg, font_files=font_files, width=1200, height=630)
     return Response(content=png, media_type="image/png")
 
@@ -191,28 +191,26 @@ async def default_response(request: Request, full_path: str) -> Response:
     try:
         if page := resolve_page(full_path):
             markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
-            markdown_conditions = [
-                full_path.endswith(".md"),
-                "text/markdown" in request.headers.get("accept", "").lower(),
-                any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])
-            ]
+            markdown_mode = any([full_path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])])
 
             if page.endswith(".html"):
-                if any(markdown_conditions):
+                if markdown_mode:
                     content = templates.env.get_template(page).render(request=request)
                     soup = BeautifulSoup(content, "html.parser")
                     main = str(soup.find("main")) if soup.find("main") else content
                     markdown = markitdown.convert_stream(io.BytesIO(main.encode("utf-8")), file_extension=".html")
                     response = PlainTextResponse(markdown.text_content, status_code=200, media_type="text/markdown")
                 else:
-                    response = templates.TemplateResponse(status_code=200, request=request, name=page)
+                    content = templates.env.get_template(page).render(request=request)
+                    response = PlainTextResponse(content, status_code=200, media_type="text/html")
 
             elif page.endswith(".md"):
                 with Directories.public.joinpath(page).open("r") as f:
                     markdown = f.read()
 
-                if any(markdown_conditions):
-                    response = PlainTextResponse(markdown, status_code=200, media_type="text/markdown")
+                if markdown_mode:
+                    content = templates.env.from_string(markdown).render(request=request)
+                    response = PlainTextResponse(content, status_code=200, media_type="text/markdown")
 
                 else:
                     if not markdown.startswith("---"):
