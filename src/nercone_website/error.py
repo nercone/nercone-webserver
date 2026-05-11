@@ -52,4 +52,4 @@ default_joke_messages = {
 
 def error_page(templates: Jinja2Templates, request: Request, status_code: int, message: str | None = None, joke_message: str | None = None) -> Response:
     status_code_name = HTTPStatus(status_code).phrase
-    return templates.TemplateResponse(status_code=status_code, request=request, name="error.html", context={"status_code": status_code, "status_code_name": status_code_name, "message": message or default_messages.get(status_code, "不明なエラーが発生してしまったようです。ご迷惑をおかけし申し訳ございません..."), "joke_message": joke_message or default_joke_messages.get(status_code, "あんのーん")})
+    return templates.TemplateResponse(status_code=status_code, request=request, name="error/index.html", context={"status_code": status_code, "status_code_name": status_code_name, "message": message or default_messages.get(status_code, "不明なエラーが発生してしまったようです。ご迷惑をおかけし申し訳ございません..."), "joke_message": joke_message or default_joke_messages.get(status_code, "あんのーん")})
