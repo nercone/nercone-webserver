@@ -142,10 +142,6 @@ welcome to nercone.dev!
         status_code=200
     )
 
-@app.api_route("/error/{code}", methods=["GET", "POST", "HEAD"])
-async def fake_error_page(request: Request, code: str):
-    return error_page(templates=templates, request=request, status_code=int(code))
-
 google_fonts_css_cache: dict = {"content": None, "expires_at": 0}
 @app.api_route("/assets/css/google-fonts.css", methods=["GET"])
 async def google_fonts_css(request: Request):
