@@ -3,7 +3,9 @@ import re
 import json
 import yaml
 import mistune
+import resvg_py
 from typing import Any
+from html import escape
 from pathlib import Path
 from http import HTTPStatus
 from bs4 import BeautifulSoup
@@ -169,3 +171,27 @@ def render_error_page(templates: Jinja2Templates, request: Request, status_code:
         )
     else:
         return PlainTextResponse(message or ErrorMessages.normal.get(status_code, "不明なエラーが発生しました。"), status_code=status_code)
+
+thumbnail_font_dir = Directories.public.joinpath("assets", "fonts")
+thumbnail_font_files = [
+    str(thumbnail_font_dir / "MesloBIZUD-Regular.ttf"),
+    str(thumbnail_font_dir / "InterBIZUD-Regular.ttf"),
+    str(thumbnail_font_dir / "InterBIZUD-Bold.ttf")
+]
+
+def render_thumbnail_svg(path: str, title: str = "Untitled Page", description: str = "No description.", template: str = "normal") -> str:
+    if file := resolve_file(f"/assets/images/thumbnails/{template}.svg"):
+        with file.open("r", encoding="utf-8") as f:
+            svg = f.read()
+        parts = [p for p in path.strip("/").split("/") if p]
+        svg = svg.replace("__PATH__", escape("nercone.dev / " + " / ".join(parts) if parts else "nercone.dev"))
+        svg = svg.replace("__TITLE__", escape(title))
+        svg = svg.replace("__DESCRIPTION__", escape(description))
+        return svg
+    else:
+        raise FileNotFoundError()
+
+def render_thumbnail_png(path: str, title: str = "Untitled Page", description: str = "No description.", template: str = "normal") -> bytes:
+    svg = render_thumbnail_svg(path=path, title=title, description=description, template=template)
+    png = resvg_py.svg_to_bytes(svg, font_files=thumbnail_font_files, width=1200, height=630)
+    return png

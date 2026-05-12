@@ -8,8 +8,7 @@ from fastapi.responses import PlainTextResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from .config import Directories, Files, Repositories, Hostnames
-from .renderer import render, render_error_page
-from .thumbnail import get_thumbnail_png
+from .renderer import render, render_error_page, render_thumbnail_png
 from .database import AccessCounter
 from .middleware import Middleware
 
@@ -106,7 +105,7 @@ async def thumbnail(request: Request) -> Response:
     template = request.query_params.get("template", "normal")
 
     try:
-        png = get_thumbnail_png(path=path, title=title, description=description, template=template)
+        png = render_thumbnail_png(path=path, title=title, description=description, template=template)
         return Response(content=png, media_type="image/png")
     except FileNotFoundError:
         return render_error_page(templates=templates, request=request, status_code=500, message="サムネイルの生成に必要なテンプレートが見つかりません。", joke_message="はにゃ？")
