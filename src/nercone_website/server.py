@@ -95,8 +95,9 @@ async def google_fonts_css(request: Request):
     if css.status_code == 200:
         google_fonts_css_cache["content"] = css.text
         google_fonts_css_cache["expires_at"] = now + 86400
-
-    return PlainTextResponse(css.text or "Failed to retrieve the Google Fonts CSS file.", status_code=200 if css.status_code == 200 else 500, media_type="text/css")
+        return PlainTextResponse(css.text, status_code=200, media_type="text/css")
+    else:
+        return render_error_page(templates=templates, request=request, status_code=502)
 
 @app.api_route("/assets/images/thumbnails/{path:path}", methods=["GET"])
 async def thumbnail(request: Request, path: str) -> Response:
