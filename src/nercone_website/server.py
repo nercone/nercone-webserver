@@ -1,13 +1,13 @@
 import re
 import random
-import resvg_py
 import requests
+import resvg_py
 from html import escape
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, Request, Response
-from fastapi.templating import Jinja2Templates
 from fastapi.responses import PlainTextResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 
 from .config import Directories, Files, Repositories, Hostnames
 from .renderer import render, render_error_page

@@ -7,8 +7,8 @@ from pathlib import Path
 from http import HTTPStatus
 from bs4 import BeautifulSoup
 from markitdown import MarkItDown
-from fastapi import Request, Response
 from starlette.templating import Jinja2Templates
+from fastapi import Request, Response
 from fastapi.responses import PlainTextResponse, FileResponse, RedirectResponse
 
 from .config import Directories, Files, ErrorMessages
