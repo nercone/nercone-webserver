@@ -75,7 +75,7 @@ def render(path: str, templates: Jinja2Templates, access_counter: AccessCounter 
     try:
         if page := resolve_page(path):
             markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
-            markdown_mode = any([path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])]) and not path.endswith(".md")
+            markdown_mode = any([path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])])
 
             if page.endswith(".html"):
                 if markdown_mode:
