@@ -10,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import PlainTextResponse, JSONResponse
 
 from .config import Directories, Files, Repositories, Hostnames
-from .renderer import render
+from .renderer import render, render_error_page
 from .database import AccessCounter
 from .middleware import Middleware
 
@@ -120,6 +120,10 @@ async def thumbnail(request: Request, path: str) -> Response:
 
     png = resvg_py.svg_to_bytes(svg, font_files=font_files, width=1200, height=630)
     return Response(content=png, media_type="image/png")
+
+@app.api_route("/test/error-page/{code}", methods=["GET", "POST", "HEAD"])
+async def fake_error_page(request: Request, status_code: int):
+    return render_error_page(templates=templates, request=request, status_code=status_code)
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD"])
 async def default_response(request: Request, full_path: str) -> Response:
