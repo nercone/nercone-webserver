@@ -42,6 +42,7 @@ def resolve_page(path: str) -> str | None:
         markdown_candidates = [f"{path.strip('/')}.md",   f"{path.strip('/')}/index.md",   f"{path.strip('/')}/README.md"]
 
     candidates = template_candidates + markdown_candidates
+
     for candidate in candidates:
         if file := resolve_file(candidate):
             return str(file.relative_to(Directories.public))
