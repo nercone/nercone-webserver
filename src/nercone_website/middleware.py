@@ -118,7 +118,6 @@ class Middleware:
         return body
 
     async def _send(self, response: Response, scope, receive, send, timings: dict, request_start: float):
-
         content_type = response.headers.get("content-type", "")
 
         if "text/css" in content_type:
