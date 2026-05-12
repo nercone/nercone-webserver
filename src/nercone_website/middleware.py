@@ -7,7 +7,7 @@ from fastapi.responses import PlainTextResponse
 from starlette.types import Scope, ASGIApp, Receive, Send
 
 from .logger import log_access, finalize_log
-from .config import Repositories, Hostnames, AccessSources
+from .config import Hostnames, AccessSources, Options
 
 class Middleware:
     def __init__(self, app: ASGIApp):
@@ -87,12 +87,8 @@ class Middleware:
             elif message["type"] == "http.response.body":
                 body_parts.append(message.get("body", b""))
 
-        body = await self._read_body(receive)
-        async def cached_receive():
-            return {"type": "http.request", "body": body, "more_body": False}
-
         app_start = time.perf_counter()
-        await self.app(new_scope, cached_receive, capture_send)
+        await self.app(new_scope, receive, capture_send)
         timings[key] = timings.get(key, 0.0) + (time.perf_counter() - app_start) * 1000
 
         response = Response(
@@ -101,7 +97,7 @@ class Middleware:
         )
 
         if response.status_code == 404 and path != "/" and path.endswith("/"):
-            return await self._get_response(scope, cached_receive, path.rstrip("/"), timings, key)
+            return await self._get_response(scope, receive, path.rstrip("/"), timings, key)
 
         for k, v in resp_headers:
             response.headers.raw.append((k, v))
@@ -139,11 +135,7 @@ class Middleware:
         elif "image/svg" in content_type:
             minify_start = time.perf_counter()
             try:
-                minify_options = scour.generateDefaultOptions()
-                minify_options.newlines = False
-                minify_options.shorten_ids = True
-                minify_options.strip_comments = True
-                response.body = scour.scourString(response.body.decode("utf-8", errors="replace"), minify_options).encode("utf-8")
+                response.body = scour.scourString(response.body.decode("utf-8", errors="replace"), Options.scour_options).encode("utf-8")
             except Exception:
                 pass
             timings["minify"] = timings.get("minify", 0.0) + (time.perf_counter() - minify_start) * 1000
@@ -154,35 +146,11 @@ class Middleware:
 
         set_header("Content-Length", str(len(response.body)))
 
-        set_header("Server", f"nercone.dev ({Repositories.Server.version})")
-        set_header("Onion-Location", f"http://{Hostnames.onion}/")
-        set_header("Link", "<https://nercone.dev/sitemap.xml>; rel=\"sitemap\", <https://nercone.dev/robots.txt>; rel=\"robots\"")
-
-        set_header("Access-Control-Allow-Origin", "*", override=False)
-        set_header("Access-Control-Allow-Methods", "*", override=False)
-        set_header("Access-Control-Allow-Headers", "*", override=False)
-
-        set_header("Referrer-Policy", "strict-origin-when-cross-origin")
-        set_header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=()", override=False)
-
-        content_security_policy = """
-        default-src 'self' assets.nercone.dev;
-        script-src 'self' assets.nercone.dev;
-        style-src 'self' assets.nercone.dev fonts.googleapis.com;
-        font-src 'self' assets.nercone.dev fonts.gstatic.com;
-        img-src 'self' assets.nercone.dev t3tra.dev drsb.f5.si data:;
-        connect-src 'self';
-        frame-ancestors 'self';
-        base-uri 'self';
-        form-action 'self';
-        upgrade-insecure-requests;
-        """
-        set_header("Content-Security-Policy", " ".join([line.strip() for line in content_security_policy.strip().split("\n")]), override=False)
-
-        if content_type.startswith("text/html"):
-            set_header("Cache-Control", "no-cache", override=False)
-        else:
+        if not content_type.startswith("text/html"):
             set_header("Cache-Control", "public, max-age=3600", override=False)
+
+        for header in Options.headers:
+            set_header(header["key"], header["value"], override=header["override"])
 
         timings["total"] = (time.perf_counter() - request_start) * 1000
         timings_header = ", ".join([f"{name};dur={round(value, 3)}" for name, value in timings.items()])

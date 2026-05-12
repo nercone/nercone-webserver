@@ -1,5 +1,6 @@
 import ipaddress
 import subprocess
+from scour import scour
 from pathlib import Path
 from fastapi import Request, Response
 
@@ -99,13 +100,13 @@ class AccessSources:
 
         "100.64.0.0/10"
     ]
+    networks = [ipaddress.ip_network(n) for n in trusted]
 
     @staticmethod
     def is_trusted(ip: str, forwarded_for: str = "") -> bool:
         try:
             addr = ipaddress.ip_address(ip)
-            networks = [ipaddress.ip_network(n) for n in AccessSources.trusted]
-            ip_is_trusted = any(addr in net for net in networks)
+            ip_is_trusted = any(addr in net for net in AccessSources.networks)
         except ValueError:
             return False
 
@@ -135,11 +136,42 @@ class AccessSources:
                 return True
             try:
                 effective_addr = ipaddress.ip_address(effective_entry)
-                return any(effective_addr in net for net in networks)
+                return any(effective_addr in net for net in AccessSources.networks)
             except ValueError:
                 return False
 
         return True
+
+class Options:
+    content_security_policy = """
+    default-src 'self' assets.nercone.dev;
+    script-src 'self' assets.nercone.dev;
+    style-src 'self' assets.nercone.dev;
+    font-src 'self' assets.nercone.dev fonts.gstatic.com;
+    img-src 'self' assets.nercone.dev t3tra.dev drsb.f5.si data:;
+    connect-src 'self';
+    frame-ancestors 'self';
+    base-uri 'self';
+    form-action 'self';
+    upgrade-insecure-requests;
+    """
+
+    headers = [
+        {"key": "Server", "value": f"nercone.dev ({Repositories.Server.version})", "override": True},
+        {"key": "Onion-Location", "value": f"http://{Hostnames.onion}/", "override": True},
+        {"key": "Link", "value": "<https://nercone.dev/sitemap.xml>; rel=\"sitemap\", <https://nercone.dev/robots.txt>; rel=\"robots\"", "override": True},
+        {"key": "Access-Control-Allow-Origin", "value": "*", "override": False},
+        {"key": "Access-Control-Allow-Methods", "value": "*", "override": False},
+        {"key": "Access-Control-Allow-Headers", "value": "*", "override": False},
+        {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin", "override": True},
+        {"key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=()", "override": False},
+        {"key": "Content-Security-Policy", "value": " ".join([line.strip() for line in content_security_policy.strip().split("\n")]), "override": False}
+    ]
+
+    scour_options = scour.generateDefaultOptions()
+    scour_options.newlines = False
+    scour_options.shorten_ids = True
+    scour_options.strip_comments = True
 
 class UserOptions:
     def __init__(self, request: Request):
@@ -151,10 +183,10 @@ class UserOptions:
     def __len__(self):
         return len(self.request.cookies | self.request.query_params)
 
-    def get(self, key: str):
+    def get(self, key: str, default: str | None = None):
         query = self.request.query_params.get(key, None)
         cookie = self.request.cookies.get(key, None)
-        return query or cookie
+        return query or cookie or default
 
     def apply(self, response: Response):
         queries = self.request.query_params

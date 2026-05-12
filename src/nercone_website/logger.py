@@ -3,7 +3,7 @@ import uuid
 import json
 from starlette.types import Scope
 from datetime import datetime, timezone
-from .config import Files, AccessSources
+from .config import Files
 
 def log_access(scope: Scope, id: str = None, write: bool = False) -> tuple[dict, float]:
     client = scope.get("client") or ("", 0)
@@ -16,7 +16,7 @@ def log_access(scope: Scope, id: str = None, write: bool = False) -> tuple[dict,
         "from": {
             "address": client[0],
             "port": client[1],
-            "trusted": AccessSources.is_trusted(scope.get("client", ("", 0))[0], headers.get(b"x-forwarded-for", b"").decode())
+            "trusted": scope.get("trusted", False)
         },
         "to": {
             "scheme": scope.get("scheme", "https"),

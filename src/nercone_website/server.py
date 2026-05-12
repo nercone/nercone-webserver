@@ -1,8 +1,6 @@
 import re
 import httpx
 import random
-import resvg_py
-from html import escape
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, Request, Response
@@ -11,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 
 from .config import Directories, Files, Repositories, Hostnames
 from .renderer import render, render_error_page
+from .thumbnail import get_thumbnail_png
 from .database import AccessCounter
 from .middleware import Middleware
 
@@ -105,24 +104,7 @@ async def thumbnail(request: Request, path: str) -> Response:
     description = request.query_params.get("description", "No description.")
     template_type = request.query_params.get("template", "normal")
 
-    parts = [p for p in path.strip("/").split("/") if p]
-    path_display = "nercone.dev / " + " / ".join(parts) if parts else "nercone.dev"
-
-    font_dir = Directories.public.joinpath("assets", "fonts")
-    font_files = [
-        str(font_dir / "MesloBIZUD-Regular.ttf"),
-        str(font_dir / "InterBIZUD-Regular.ttf"),
-        str(font_dir / "InterBIZUD-Bold.ttf")
-    ]
-
-    svg_file = Directories.public.joinpath("assets", "images", "thumbnails", "error.svg" if template_type == "error" else "normal.svg")
-
-    svg = svg_file.read_text(encoding="utf-8")
-    svg = svg.replace("__PATH__", escape(path_display))
-    svg = svg.replace("__TITLE__", escape(title))
-    svg = svg.replace("__DESCRIPTION__", escape(description))
-
-    png = resvg_py.svg_to_bytes(svg, font_files=font_files, width=1200, height=630)
+    png = get_thumbnail_png(path=path, title=title, description=description, template_type=template_type)
     return Response(content=png, media_type="image/png")
 
 @app.api_route("/test/error-page/{status_code}", methods=["GET", "POST", "HEAD"])
