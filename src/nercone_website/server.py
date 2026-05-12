@@ -90,7 +90,8 @@ async def google_fonts_css(request: Request):
         return PlainTextResponse(google_fonts_css_cache["content"], status_code=200, media_type="text/css")
 
     async with httpx.AsyncClient() as client:
-        css = await client.get("https://fonts.googleapis.com/...")
+        css = await client.get("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=BIZ+UDGothic&family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+SC:wght@100..900&family=Noto+Sans+TC:wght@100..900&family=Noto+Sans+KR:wght@100..900&display=swap")
+
     if css.status_code == 200:
         google_fonts_css_cache["content"] = css.text
         google_fonts_css_cache["expires_at"] = now + 86400
