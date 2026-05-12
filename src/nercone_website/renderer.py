@@ -125,10 +125,10 @@ def render(path: str, templates: Jinja2Templates, access_counter: AccessCounter 
             return response
 
         elif file := resolve_file(path):
-            return FileResponse(file)
+            return FileResponse(file, status_code=status_code)
 
         elif url := resolve_shorturl(path):
-            return RedirectResponse(url)
+            return RedirectResponse(url, status_code=status_code if 299 < status_code < 400 else 307)
 
         else:
             return render_error_page(templates, request, 404, "リクエストしたページは現在ご利用になれません。削除/移動されたか、URLが間違っている可能性があります。", "そんなページ知らないっ！")
