@@ -89,7 +89,7 @@ def resolve_shorturl(path: str) -> str | None:
 
     return None
 
-def render(path: str, templates: Jinja2Templates, access_counter: AccessCounter | None, request: Request, status_code: int = 200, context: dict[str, Any] = {}):
+def render(path: str, templates: Jinja2Templates, access_counter: AccessCounter | None, request: Request, status_code: int = 200, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
     try:
         if page := resolve_page(path):
             markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
@@ -140,19 +140,22 @@ def render(path: str, templates: Jinja2Templates, access_counter: AccessCounter 
             if access_counter:
                 access_counter.increase()
 
-            return response
-
         elif file := resolve_file(path):
-            return FileResponse(file, status_code=status_code)
+            response = FileResponse(file, status_code=status_code)
 
         elif url := resolve_shorturl(path):
-            return RedirectResponse(url, status_code=status_code if 299 < status_code < 400 else 307)
+            response = RedirectResponse(url, status_code=status_code if 299 < status_code < 400 else 307)
 
         else:
-            return render_error_page(templates, request, 404, "リクエストしたページは現在ご利用になれません。削除/移動されたか、URLが間違っている可能性があります。", "そんなページ知らないっ！")
+            response = render_error_page(templates, request, 404, "リクエストしたページは現在ご利用になれません。削除/移動されたか、URLが間違っている可能性があります。", "そんなページ知らないっ！")
 
     except PermissionError:
-        return render_error_page(templates, request, 403, "何をしてるんです？脆弱性報告のためならいいのですが、データ盗んで悪用するためなら今すぐにやめてくださいね？", "ディレクトリトラバーサルね、知ってる。公開してないところ覗きたいの？えっt")
+        response = render_error_page(templates, request, 403, "何をしてるんです？脆弱性報告のためならいいのですが、データ盗んで悪用するためなら今すぐにやめてくださいね？", "ディレクトリトラバーサルね、知ってる。公開してないところ覗きたいの？えっt")
+
+    for key, value in headers.items():
+        response.headers[key.lower().strip()] = value
+
+    return response
 
 def render_error_page(templates: Jinja2Templates, request: Request, status_code: int, message: str | None = None, joke_message: str | None = None) -> Response:
     if Files.error.is_file():
