@@ -179,7 +179,7 @@ class Middleware:
         """
         set_header("Content-Security-Policy", " ".join([line.strip() for line in content_security_policy.strip().split("\n")]), override=False)
 
-        if any(content_type.startswith(t) for t in ["text/html", "text/css", "text/javascript", "application/javascript"]):
+        if content_type.startswith("text/html"):
             set_header("Cache-Control", "no-cache", override=False)
         else:
             set_header("Cache-Control", "public, max-age=3600", override=False)
