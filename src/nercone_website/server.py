@@ -98,13 +98,14 @@ async def google_fonts_css(request: Request):
     else:
         return render_error_page(templates=templates, request=request, status_code=502)
 
-@app.api_route("/assets/images/thumbnails/{path:path}", methods=["GET"])
-async def thumbnail(request: Request, path: str) -> Response:
+@app.api_route("/assets/images/thumbnails/generate", methods=["GET"])
+async def thumbnail(request: Request) -> Response:
+    path = request.query_params.get("path", "/")
     title = request.query_params.get("title", "Untitled Page")
     description = request.query_params.get("description", "No description.")
-    template_type = request.query_params.get("template", "normal")
+    template = request.query_params.get("template", "normal")
 
-    png = get_thumbnail_png(path=path, title=title, description=description, template_type=template_type)
+    png = get_thumbnail_png(path=path, title=title, description=description, template=template)
     return Response(content=png, media_type="image/png")
 
 @app.api_route("/test/error-page/{status_code}", methods=["GET", "POST", "HEAD"])

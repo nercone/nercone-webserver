@@ -37,7 +37,7 @@ class CustomHTMLRenderer(mistune.HTMLRenderer):
 htmlitdown = mistune.create_markdown(renderer=CustomHTMLRenderer(escape=False), plugins=["table", "strikethrough", "task_lists", "footnotes"])
 
 def resolve_file(path: str) -> Path | None:
-    path = Directories.public.joinpath(path).resolve()
+    path = Directories.public.joinpath(path.lstrip("/")).resolve()
     if not path.is_relative_to(Directories.public):
         raise PermissionError()
     return path if path.is_file() else None
