@@ -112,12 +112,12 @@ async def thumbnail(request: Request) -> Response:
 
 @app.api_route("/error/nginx", methods=["GET"])
 async def fake_error_page(request: Request):
-    return render("/error/nginx.html", templates=templates, access_counter=None, request=request, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
+    return render("/error/nginx.html", templates=templates, access_counter=None, request=request, status_code=502, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
 
 @app.api_route("/error/{status_code}", methods=["GET"])
 async def fake_error_page(request: Request, status_code: int):
     if status_code in [502, 503, 504]:
-        return render("/error/nginx.html", templates=templates, access_counter=None, request=request, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
+        return render("/error/nginx.html", templates=templates, access_counter=None, request=request, status_code=status_code, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
     else:
         return render_error_page(templates=templates, request=request, status_code=status_code)
 
