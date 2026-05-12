@@ -32,11 +32,11 @@ def resolve_page(path: str) -> str | None:
         template_candidates = ["index.html", "README.html"]
         markdown_candidates = ["index.md",   "README.md"]
     elif path.endswith(".html"):
-        template_candidates = [f"{path[:-5].strip('/')}.html"]
-        markdown_candidates = [f"{path[:-5].strip('/')}.md"]
+        template_candidates = [f"{path[:-5].strip('/')}.html", f"{path[:-5].strip('/')}/index.html", f"{path[:-5].strip('/')}/README.html"]
+        markdown_candidates = [f"{path[:-5].strip('/')}.md", f"{path[:-5].strip('/')}/index.md", f"{path[:-5].strip('/')}/README.md"]
     elif path.endswith(".md"):
-        template_candidates = [f"{path[:-3].strip('/')}.html"]
-        markdown_candidates = [f"{path[:-3].strip('/')}.md"]
+        template_candidates = [f"{path[:-3].strip('/')}.html", f"{path[:-3].strip('/')}/index.html", f"{path[:-3].strip('/')}/README.html"]
+        markdown_candidates = [f"{path[:-3].strip('/')}.md", f"{path[:-3].strip('/')}/index.md", f"{path[:-3].strip('/')}/README.md"]
     else:
         template_candidates = [f"{path.strip('/')}.html", f"{path.strip('/')}/index.html", f"{path.strip('/')}/README.html"]
         markdown_candidates = [f"{path.strip('/')}.md",   f"{path.strip('/')}/index.md",   f"{path.strip('/')}/README.md"]
@@ -71,7 +71,7 @@ def resolve_shorturl(path: str) -> str | None:
 
     return None
 
-def render(path: str, templates: Jinja2Templates, access_counter: AccessCounter | None, request: Request, context: dict[str, Any] = {}, status_code: int = 200):
+def render(path: str, templates: Jinja2Templates, access_counter: AccessCounter | None, request: Request, status_code: int = 200, context: dict[str, Any] = {}):
     try:
         if page := resolve_page(path):
             markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
@@ -143,6 +143,7 @@ def render_error_page(templates: Jinja2Templates, request: Request, status_code:
             templates=templates,
             access_counter=None,
             request=request,
+            status_code=status_code,
             context={
                 "status_code": status_code,
                 "status_code_name": HTTPStatus(status_code).phrase,
