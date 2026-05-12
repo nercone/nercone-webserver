@@ -33,10 +33,10 @@ def resolve_page(path: str) -> str | None:
         markdown_candidates = ["index.md",   "README.md"]
     elif path.endswith(".html"):
         template_candidates = [f"{path[:-5].strip('/')}.html", f"{path[:-5].strip('/')}/index.html", f"{path[:-5].strip('/')}/README.html"]
-        markdown_candidates = [f"{path[:-5].strip('/')}.md", f"{path[:-5].strip('/')}/index.md", f"{path[:-5].strip('/')}/README.md"]
+        markdown_candidates = [f"{path[:-5].strip('/')}.md",   f"{path[:-5].strip('/')}/index.md",   f"{path[:-5].strip('/')}/README.md"]
     elif path.endswith(".md"):
         template_candidates = [f"{path[:-3].strip('/')}.html", f"{path[:-3].strip('/')}/index.html", f"{path[:-3].strip('/')}/README.html"]
-        markdown_candidates = [f"{path[:-3].strip('/')}.md", f"{path[:-3].strip('/')}/index.md", f"{path[:-3].strip('/')}/README.md"]
+        markdown_candidates = [f"{path[:-3].strip('/')}.md",   f"{path[:-3].strip('/')}/index.md",   f"{path[:-3].strip('/')}/README.md"]
     else:
         template_candidates = [f"{path.strip('/')}.html", f"{path.strip('/')}/index.html", f"{path.strip('/')}/README.html"]
         markdown_candidates = [f"{path.strip('/')}.md",   f"{path.strip('/')}/index.md",   f"{path.strip('/')}/README.md"]
