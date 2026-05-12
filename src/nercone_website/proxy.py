@@ -66,8 +66,13 @@ def make_websocket_proxy(base_url_websocket: str, remove_prefix_path: bool = Fal
             async def server_to_client():
                 async for message in server_ws:
                     await client_ws.send_bytes(message)
-            await asyncio.gather(
-                asyncio.create_task(client_to_server()),
-                asyncio.create_task(server_to_client())
-            )
+            try:
+                await asyncio.gather(
+                    asyncio.create_task(client_to_server()),
+                    asyncio.create_task(server_to_client()),
+                    return_exceptions=True
+                )
+            finally:
+                if not client_ws.client_state.value == 3:
+                    await client_ws.close()
     return websocket_proxy

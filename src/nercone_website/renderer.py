@@ -53,7 +53,8 @@ def resolve_shorturl(path: str) -> str | None:
     max_retry = 10
 
     if Files.shorturls.is_file():
-        shorturls = json.load(Files.shorturls.open("r", encoding="utf-8"))
+        with Files.shorturls.open("r", encoding="utf-8") as f:
+            shorturls = json.load(f)
 
         current = path.strip("/")
         visited = set()

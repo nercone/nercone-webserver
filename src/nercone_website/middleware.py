@@ -37,11 +37,11 @@ class Middleware:
 
         timings: dict[str, float] = {}
         request_start = time.perf_counter()
-        trusted = AccessSources.is_trusted(scope.get("client", ("", 0))[0], headers.get(b"x-forwarded-for", b"").decode())
 
         scope["log"] = log_access(scope)
+        scope["trusted"] = AccessSources.is_trusted(scope.get("client", ("", 0))[0], headers.get(b"x-forwarded-for", b"").decode())
 
-        if not trusted and not any([hostname.endswith(candidate) for candidate in Hostnames.all]):
+        if not scope["trusted"] and not any([hostname == candidate or hostname.endswith("." + candidate) for candidate in Hostnames.all]):
             response = PlainTextResponse("許可されていないホスト名でのアクセスです。", status_code=400)
             await self._send(response, scope, receive, send, timings, request_start)
             finalize_log(scope["log"], response.status_code, request_start, timings)
