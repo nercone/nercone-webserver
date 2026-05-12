@@ -1,4 +1,5 @@
 import io
+import re
 import json
 import yaml
 import mistune
@@ -17,8 +18,22 @@ from .database import AccessCounter
 markitdown = MarkItDown()
 
 class CustomHTMLRenderer(mistune.HTMLRenderer):
+    _alert_re = re.compile(r'^\s*<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\n(.*?))?</p>\s*', re.IGNORECASE | re.DOTALL,)
+
     def block_code(self, code, **attrs):
         return f'<pre>{mistune.escape(code)}</pre>\n'
+
+    def block_quote(self, text):
+        m = self._alert_re.match(text)
+        if m:
+            alert_type = m.group(1).upper()
+            inline_content = m.group(2)
+            rest = text[m.end():]
+            label = alert_type.capitalize()
+            css_class = alert_type.lower()
+            inner = (f'<p>{inline_content}</p>\n' if inline_content and inline_content.strip() else '') + rest
+            return f'<div class="block block-{css_class}">\n<b>{label}</b>\n{inner}</div>\n'
+        return f'<blockquote>\n{text}</blockquote>\n'
 htmlitdown = mistune.create_markdown(renderer=CustomHTMLRenderer(escape=False), plugins=["table", "strikethrough", "task_lists", "footnotes"])
 
 def resolve_file(path: str) -> Path | None:
