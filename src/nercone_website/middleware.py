@@ -59,7 +59,7 @@ class Middleware:
             subdomain_path = f"/{'/'.join(subdomain.split('.')[::-1])}{original_path}"
 
             response = await self._get_response(scope, cached_receive, subdomain_path, timings, "app")
-            if response.status_code < 400:
+            if response.status_code < 400 or response.status_code >= 500:
                 await self._send(response, scope, cached_receive, send, timings, request_start)
                 finalize_log(scope["log"], response.status_code, request_start, timings)
                 return

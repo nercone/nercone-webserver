@@ -11,7 +11,7 @@ font_files = [
 ]
 
 def get_thumbnail_svg(path: str, title: str = "Untitled Page", description: str = "No description.", template: str = "normal") -> str:
-    if file := resolve_file("/assets/images/thumbnails/{name}.svg"):
+    if file := resolve_file(f"/assets/images/thumbnails/{template}.svg"):
         with file.open("r", encoding="utf-8") as f:
             svg = f.read()
         parts = [p for p in path.strip("/").split("/") if p]
