@@ -113,10 +113,6 @@ async def thumbnail(request: Request, template: str) -> Response:
     except FileNotFoundError:
         return render_error_page(request=request, templates=templates, status_code=500, message="サムネイルの生成に必要なテンプレートが見つかりません。", joke_message="はにゃ？")
 
-@app.api_route("/error/nginx", methods=["GET"])
-async def fake_error_page(request: Request):
-    return render("/error/nginx.html", request=request, templates=templates, status_code=502, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
-
 @app.api_route("/error/{status_code}", methods=["GET"])
 async def fake_error_page(request: Request, status_code: int):
     if status_code in [502, 503, 504]:
@@ -124,6 +120,10 @@ async def fake_error_page(request: Request, status_code: int):
     else:
         return render_error_page(request=request, templates=templates, status_code=status_code)
 
-@app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD"])
-async def default_response(request: Request, full_path: str) -> Response:
-    return render(full_path, request=request, templates=templates, access_counter=access_counter)
+@app.api_route("/error/nginx", methods=["GET"])
+async def fake_error_page_nginx(request: Request):
+    return render("/error/nginx.html", request=request, templates=templates, status_code=502, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
+
+@app.api_route("/{path:path}", methods=["GET", "POST", "HEAD"])
+async def default_response(request: Request, path: str) -> Response:
+    return render(path, request=request, templates=templates, access_counter=access_counter)

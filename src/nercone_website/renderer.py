@@ -40,10 +40,10 @@ class CustomHTMLRenderer(mistune.HTMLRenderer):
 htmlitdown = mistune.create_markdown(renderer=CustomHTMLRenderer(escape=False), plugins=["table", "strikethrough", "task_lists", "footnotes"])
 
 def resolve_file(path: str) -> Path | None:
-    path = Directories.public.joinpath(path.lstrip("/")).resolve()
-    if not path.is_relative_to(Directories.public):
+    full_path = Directories.public.joinpath(path.lstrip("/")).resolve()
+    if not full_path.is_relative_to(Directories.public):
         raise PermissionError()
-    return path if path.is_file() else None
+    return full_path if full_path.is_file() else None
 
 def resolve_page(path: str) -> str | None:
     if path in ["", "/"]:
@@ -130,7 +130,7 @@ def render(path: str, request: Request, templates: Jinja2Templates, access_count
 
                     body_rendered = templates.env.from_string(body).render(request=request, **context)
                     html = htmlitdown(body_rendered)
-                    source = f"{{% extends \"/base.html\" %}}\n"
+                    source = "{{% extends \"/base.html\" %}}\n"
                     for block in front:
                         source += f"{{% block {block} %}}{front[block]}{{% endblock %}}\n"
                     source += f"{{% block main %}}\n{html}\n{{% endblock %}}\n"
@@ -154,10 +154,10 @@ def render(path: str, request: Request, templates: Jinja2Templates, access_count
             response = RedirectResponse(url, status_code=status_code if 299 < status_code < 400 else 307)
 
         else:
-            response = render_error_page(templates, request, 404, "リクエストしたページは現在ご利用になれません。削除/移動されたか、URLが間違っている可能性があります。", "そんなページ知らないっ！")
+            response = render_error_page(request, templates, 404, "リクエストしたページは現在ご利用になれません。削除/移動されたか、URLが間違っている可能性があります。", "そんなページ知らないっ！")
 
     except PermissionError:
-        response = render_error_page(templates, request, 403, "何をしてるんです？脆弱性報告のためならいいのですが、データ盗んで悪用するためなら今すぐにやめてくださいね？", "ディレクトリトラバーサルね、知ってる。公開してないところ覗きたいの？えっt")
+        response = render_error_page(request, templates, 403, "何をしてるんです？脆弱性報告のためならいいのですが、データ盗んで悪用するためなら今すぐにやめてくださいね？", "ディレクトリトラバーサルね、知ってる。公開してないところ覗きたいの？えっt")
 
     for key, value in headers.items():
         response.headers[key.lower().strip()] = value
