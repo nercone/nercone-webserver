@@ -6,7 +6,7 @@
 
 Python 3.12のFastAPI + Uvicornの上で動くASGIアプリケーションであり、`0.0.0.0:8080`でリッスンします。
 
-本番環境ではNginxがリバースプロキシ兼TLS終端として前段に立ち、GCP Compute Engine (AlmaLinux 10)上のsystemdサービス(`nercone-website.service`)として常駐しています。
+本番環境ではNginxがリバースプロキシ兼TLS終端として前段に立ち、GCP Compute Engine (AlmaLinux 10.1)上のsystemdサービス(`nercone-website.service`)として常駐しています。
 
 コンテンツ (HTML、Markdown、CSS、画像など) は別リポジトリ`website-contents`で管理されており、`git submodule`を使用し`public/`ディレクトリにマウントされています。
 
