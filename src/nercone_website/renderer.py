@@ -45,7 +45,7 @@ def resolve_file(path: str) -> Path | None:
         raise PermissionError()
     return full_path if full_path.is_file() else None
 
-def resolve_page(path: str) -> str | None:
+def resolve_page(path: str, markdown_mode: bool = False) -> str | None:
     if path in ["", "/"]:
         template_candidates = ["index.html", "README.html"]
         markdown_candidates = ["index.md",   "README.md"]
@@ -59,7 +59,10 @@ def resolve_page(path: str) -> str | None:
         template_candidates = [f"{path.strip('/')}.html", f"{path.strip('/')}/index.html", f"{path.strip('/')}/README.html"]
         markdown_candidates = [f"{path.strip('/')}.md",   f"{path.strip('/')}/index.md",   f"{path.strip('/')}/README.md"]
 
-    candidates = template_candidates + markdown_candidates
+    if markdown_mode:
+        candidates = markdown_candidates + template_candidates 
+    else:
+        candidates = template_candidates + markdown_candidates
 
     for candidate in candidates:
         if file := resolve_file(candidate):
@@ -91,11 +94,11 @@ def resolve_shorturl(path: str) -> str | None:
     return None
 
 def render(path: str, request: Request, templates: Jinja2Templates, access_counter: AccessCounter | None = None, status_code: int = 200, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
-    try:
-        if page := resolve_page(path):
-            markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
-            markdown_mode = any([path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])])
+    markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
+    markdown_mode = any([path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])])
 
+    try:
+        if page := resolve_page(path, markdown_mode=markdown_mode):
             if page.endswith(".html"):
                 if markdown_mode:
                     content = templates.env.get_template(page).render(request=request, **context)
