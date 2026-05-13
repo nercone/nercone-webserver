@@ -149,7 +149,7 @@ class Middleware:
         if content_type.startswith("text/html"):
             set_header("Cache-Control", "no-cache", override=False)
         else:
-            set_header("Cache-Control", "public, max-age=3600", override=False)
+            set_header("Cache-Control", "public, max-age=604800", override=False)
 
         for header in Options.headers:
             set_header(header["key"], header["value"], override=header["override"])
