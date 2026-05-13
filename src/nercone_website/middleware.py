@@ -146,7 +146,9 @@ class Middleware:
 
         set_header("Content-Length", str(len(response.body)))
 
-        if not content_type.startswith("text/html"):
+        if content_type.startswith("text/html"):
+            set_header("Cache-Control", "no-cache", override=False)
+        else:
             set_header("Cache-Control", "public, max-age=3600", override=False)
 
         for header in Options.headers:

@@ -106,7 +106,7 @@ async def thumbnail(request: Request) -> Response:
 
     try:
         png = render_thumbnail_png(path=path, title=title, description=description, template=template)
-        return Response(content=png, media_type="image/png")
+        return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-cache"})
     except FileNotFoundError:
         return render_error_page(templates=templates, request=request, status_code=500, message="サムネイルの生成に必要なテンプレートが見つかりません。", joke_message="はにゃ？")
 
