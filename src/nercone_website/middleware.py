@@ -157,11 +157,6 @@ class Middleware:
 
         set_header("Content-Length", str(len(response.body)))
 
-        if any([content_type.startswith(t) for t in ["text/css", "text/javascript", "text/javascript", "application/javascript", "font/", "image/", "video/"]]):
-            set_header("Cache-Control", "public, max-age=604800", override=False)
-        else:
-            set_header("Cache-Control", "no-cache", override=False)
-
         set_header("Server", f"nercone.dev ({Repositories.Server.version}+{Repositories.Contents.version})")
         set_header("Onion-Location", f"http://{Hostnames.onion}/")
         set_header("Link", "<https://nercone.dev/sitemap.xml>; rel=\"sitemap\", <https://nercone.dev/robots.txt>; rel=\"robots\"")
@@ -186,6 +181,11 @@ class Middleware:
         set_header("Referrer-Policy", "strict-origin-when-cross-origin")
         set_header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=()", override=False)
         set_header("Content-Security-Policy", " ".join([line.strip() for line in content_security_policy.strip().split("\n")]), override=False)
+
+        if any([content_type.startswith(t) for t in ["text/css", "text/javascript", "text/javascript", "application/javascript", "font/", "image/", "video/"]]):
+            set_header("Cache-Control", "public, max-age=604800", override=False)
+        else:
+            set_header("Cache-Control", "no-cache", override=False)
 
         timings["total"] = (time.perf_counter() - request_start) * 1000
         timings_header = ", ".join([f"{name};dur={round(value, 3)}" for name, value in timings.items()])
