@@ -81,6 +81,8 @@ https://github.com/nercone-dev/website-contents.git
 │   │   ├── dotcat
 │   │   │   ├── 2nd
 │   │   │   │   └── ...
+│   │   │   ├── error
+│   │   │   │   └── ...
 │   │   │   ├── forks
 │   │   │   │   └── ...
 │   │   │   ├── labs
@@ -90,28 +92,41 @@ https://github.com/nercone-dev/website-contents.git
 │   │   │   ├── step
 │   │   │   │   └── ...
 │   │   │   ├── icon.ai
-│   │   │   ├── icon.png
 │   │   │   ├── icon.svg
+│   │   │   ├── icon.png
 │   │   │   ├── icon.webp
 │   │   │   ├── icon-rounded.ai
-│   │   │   ├── icon-rounded.png
 │   │   │   ├── icon-rounded.svg
+│   │   │   ├── icon-rounded.png
 │   │   │   ├── icon-rounded.webp
 │   │   │   ├── icon-mask.ai
-│   │   │   ├── icon-mask.png
 │   │   │   ├── icon-mask.svg
+│   │   │   ├── icon-mask.png
 │   │   │   ├── icon-mask.webp
 │   │   │   ├── icon-mask-inverted.ai
-│   │   │   ├── icon-mask-inverted.png
 │   │   │   ├── icon-mask-inverted.svg
-│   │   │   ├── icon-mask-inverted.webp
-│   │   │   ├── banner.ai
-│   │   │   ├── banner.png
-│   │   │   ├── banner.svg
-│   │   │   └── banner.webp
-│   │   ├── thumbnails
-│   │   │   ├── error.svg - エラーページ用サムネイルテンプレート
-│   │   │   └── normal.svg - 通常ページ用サムネイルテンプレート
+│   │   │   ├── icon-mask-inverted.png
+│   │   │   └── icon-mask-inverted.webp
+│   │   ├── thumbnail
+│   │   │   ├── template
+│   │   │   │   ├── error.svg - エラーページ用サムネイルテンプレート
+│   │   │   │   └── normal.svg - 通常ページ用サムネイルテンプレート
+│   │   │   └── ...
+│   │   ├── symbol
+│   │   │   ├── extended
+│   │   │   │   └── ...
+│   │   │   ├── icon.ai
+│   │   │   ├── icon.svg
+│   │   │   ├── icon.png
+│   │   │   └── icon.webp
+│   │   ├── header
+│   │   │   └── ...
+│   │   ├── wallpaper
+│   │   │   └── ...
+│   │   ├── 3rd-party
+│   │   │   └── ...
+│   │   ├── other
+│   │   │   └── ...
 │   │   └── ...
 │   ├── fonts - フォント
 │   │   ├── InterBIZUD-Regular.ttf
