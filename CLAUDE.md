@@ -109,8 +109,14 @@ https://github.com/nercone-dev/website-contents.git
 │   │   │   └── icon-mask-inverted.webp
 │   │   ├── thumbnail
 │   │   │   ├── template
-│   │   │   │   ├── error.svg - エラーページ用サムネイルテンプレート
-│   │   │   │   └── normal.svg - 通常ページ用サムネイルテンプレート
+│   │   │   │   ├── normal.ai
+│   │   │   │   ├── normal.svg
+│   │   │   │   ├── normal.png
+│   │   │   │   ├── normal.webp
+│   │   │   │   ├── error.ai
+│   │   │   │   ├── error.svg
+│   │   │   │   ├── error.png
+│   │   │   │   └── error.webp
 │   │   │   └── ...
 │   │   ├── symbol
 │   │   │   ├── extended
