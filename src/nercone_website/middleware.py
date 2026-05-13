@@ -41,7 +41,7 @@ class Middleware:
 
         scope["access_id"] = str(uuid.uuid4())
         scope["trusted"] = AccessSources.is_trusted(scope.get("client", ("", 0))[0], headers.get(b"x-forwarded-for", b"").decode())
-        scope["log"] = log_access(scope)
+        scope["log"] = log_access(scope["access_id"], scope=scope)
 
         if not scope["trusted"] and not any([hostname == candidate or hostname.endswith("." + candidate) for candidate in Hostnames.all]):
             response = PlainTextResponse("許可されていないホスト名でのアクセスです。", status_code=400)
