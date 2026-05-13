@@ -7,7 +7,7 @@ from fastapi.responses import PlainTextResponse
 from starlette.types import Scope, ASGIApp, Receive, Send
 
 from .logger import log_access, finalize_log
-from .config import Hostnames, AccessSources, Options
+from .config import Repositories, Hostnames, AccessSources, Options
 
 class Middleware:
     def __init__(self, app: ASGIApp):
@@ -151,8 +151,30 @@ class Middleware:
         else:
             set_header("Cache-Control", "no-cache", override=False)
 
-        for header in Options.headers:
-            set_header(header.get("key"), header.get("value"), override=header.get("override", True))
+        set_header("Server", f"nercone.dev ({Repositories.Server.version}+{Repositories.Contents.version})")
+        set_header("Onion-Location", f"http://{Hostnames.onion}/")
+        set_header("Link", "<https://nercone.dev/sitemap.xml>; rel=\"sitemap\", <https://nercone.dev/robots.txt>; rel=\"robots\"")
+
+        set_header("Access-Control-Allow-Origin", "*", override=False)
+        set_header("Access-Control-Allow-Methods", "*", override=False)
+        set_header("Access-Control-Allow-Headers", "*", override=False)
+
+        content_security_policy = """
+        default-src 'self' assets.nercone.dev;
+        script-src 'self' assets.nercone.dev;
+        style-src 'self' assets.nercone.dev;
+        font-src 'self' assets.nercone.dev fonts.gstatic.com;
+        img-src 'self' assets.nercone.dev t3tra.dev drsb.f5.si data:;
+        connect-src 'self';
+        frame-ancestors 'self';
+        base-uri 'self';
+        form-action 'self';
+        upgrade-insecure-requests;
+        """
+
+        set_header("Referrer-Policy", "strict-origin-when-cross-origin")
+        set_header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=()", override=False)
+        set_header("Content-Security-Policy", " ".join([line.strip() for line in content_security_policy.strip().split("\n")]), override=False)
 
         timings["total"] = (time.perf_counter() - request_start) * 1000
         timings_header = ", ".join([f"{name};dur={round(value, 3)}" for name, value in timings.items()])
