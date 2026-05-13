@@ -21,10 +21,10 @@ dependencies = [
     "mistune",
     "markitdown",
 
-    "scour",
-    "rjsmin",
+    "minify-html",
     "rcssmin",
-    "minify-html"
+    "rjsmin",
+    "scour"
 ]
 
 [project.scripts]
