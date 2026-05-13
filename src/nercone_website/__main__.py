@@ -29,7 +29,7 @@ def main():
             "uvicorn.access": {"handlers": ["file", "console"], "level": "INFO", "propagate": False}
         }
     }
-    uvicorn.run("nercone_website.server:app", host="0.0.0.0", port=8080, workers=1, server_header=False, log_config=log_config)
+    uvicorn.run("nercone_website.server:app", host="0.0.0.0", port=8080, workers=4, server_header=False, log_config=log_config)
 
 if __name__ == "__main__":
     main()
