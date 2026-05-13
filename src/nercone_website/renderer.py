@@ -2,6 +2,7 @@ import io
 import re
 import json
 import yaml
+import hashlib
 import mistune
 import resvg_py
 from typing import Any
@@ -100,8 +101,8 @@ def render(path: str, templates: Jinja2Templates, access_counter: AccessCounter 
                     content = templates.env.get_template(page).render(request=request, **context)
                     soup = BeautifulSoup(content, "html.parser")
                     main = str(soup.find("main")) if soup.find("main") else content
-                    markdown = markitdown.convert_stream(io.BytesIO(main.encode("utf-8")), file_extension=".html")
-                    response = PlainTextResponse(markdown.text_content, status_code=status_code, media_type="text/markdown")
+                    content = markitdown.convert_stream(io.BytesIO(main.encode("utf-8")), file_extension=".html").text_content
+                    response = PlainTextResponse(content, status_code=status_code, media_type="text/markdown")
                 else:
                     content = templates.env.get_template(page).render(request=request, **context)
                     response = PlainTextResponse(content, status_code=status_code, media_type="text/html")
@@ -137,7 +138,13 @@ def render(path: str, templates: Jinja2Templates, access_counter: AccessCounter 
                     content = templates.env.from_string(source).render(request=request, **context)
                     response = Response(content=content, status_code=status_code, media_type="text/html")
 
-            if access_counter:
+            etag = '"' + hashlib.sha256(content.encode("utf-8")).hexdigest() + '"'
+            if request.headers.get("if-none-match") == etag:
+                response = Response(status_code=304, headers={"ETag": etag})
+            else:
+                response.headers["ETag"] = etag
+
+            if access_counter and response.status_code != 304:
                 access_counter.increase()
 
         elif file := resolve_file(path):
