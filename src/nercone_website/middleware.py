@@ -146,13 +146,13 @@ class Middleware:
 
         set_header("Content-Length", str(len(response.body)))
 
-        if content_type.startswith("text/html"):
-            set_header("Cache-Control", "no-cache", override=False)
-        else:
+        if any([content_type.startswith(t) for t in ["text/css", "text/javascript", "text/javascript", "application/javascript", "font/", "image/", "video/"]]):
             set_header("Cache-Control", "public, max-age=604800", override=False)
+        else:
+            set_header("Cache-Control", "no-cache", override=False)
 
         for header in Options.headers:
-            set_header(header["key"], header["value"], override=header["override"])
+            set_header(header.get("key"), header.get("value"), override=header.get("override", True))
 
         timings["total"] = (time.perf_counter() - request_start) * 1000
         timings_header = ", ".join([f"{name};dur={round(value, 3)}" for name, value in timings.items()])
