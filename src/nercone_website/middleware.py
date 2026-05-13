@@ -158,7 +158,7 @@ class Middleware:
         set_header("Content-Length", str(len(response.body)))
 
         set_header("Server", f"nercone.dev ({Repositories.Server.version}+{Repositories.Contents.version})")
-        set_header("Onion-Location", f"http://{Hostnames.onion}/")
+        set_header("Onion-Location", f"http://{Hostnames.onion}{scope.get("path", "/")}" + (f"?{scope.get("query_string", b"").decode()}" if "query_string" in scope else ""))
         set_header("Link", "<https://nercone.dev/sitemap.xml>; rel=\"sitemap\", <https://nercone.dev/robots.txt>; rel=\"robots\"")
 
         set_header("Access-Control-Allow-Origin", "*", override=False)
