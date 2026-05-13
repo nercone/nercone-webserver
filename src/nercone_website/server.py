@@ -47,7 +47,7 @@ async def ping(request: Request):
 
 async def echo(request: Request):
     if not request.scope.get("trusted", False):
-        return render_error_page(templates=templates, request=request, status_code=403, message="<code>/echo</code>エンドポイントはデバッグ用途のため、信頼されている一部のIP範囲からのアクセスに限定して許可されています。", joke_message="のっととらすてっど")
+        return render_error_page(request=request, templates=templates, status_code=403, message="<code>/echo</code>エンドポイントはデバッグ用途のため、信頼されている一部のIP範囲からのアクセスに限定して許可されています。", joke_message="のっととらすてっど")
     return JSONResponse(request.scope["log"], status_code=200)
 
 @app.api_route("/status", methods=["GET"])
@@ -95,7 +95,7 @@ async def google_fonts_css(request: Request):
         google_fonts_css_cache["expires_at"] = now + 86400
         return PlainTextResponse(css.text, status_code=200, media_type="text/css")
     else:
-        return render_error_page(templates=templates, request=request, status_code=502)
+        return render_error_page(request=request, templates=templates, status_code=502)
 
 @app.api_route("/assets/images/thumbnails/generate", methods=["GET"])
 async def thumbnail(request: Request) -> Response:
@@ -108,19 +108,19 @@ async def thumbnail(request: Request) -> Response:
         png = render_thumbnail_png(path=path, title=title, description=description, template=template)
         return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-cache"})
     except FileNotFoundError:
-        return render_error_page(templates=templates, request=request, status_code=500, message="サムネイルの生成に必要なテンプレートが見つかりません。", joke_message="はにゃ？")
+        return render_error_page(request=request, templates=templates, status_code=500, message="サムネイルの生成に必要なテンプレートが見つかりません。", joke_message="はにゃ？")
 
 @app.api_route("/error/nginx", methods=["GET"])
 async def fake_error_page(request: Request):
-    return render("/error/nginx.html", templates=templates, access_counter=None, request=request, status_code=502, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
+    return render("/error/nginx.html", request=request, templates=templates, status_code=502, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
 
 @app.api_route("/error/{status_code}", methods=["GET"])
 async def fake_error_page(request: Request, status_code: int):
     if status_code in [502, 503, 504]:
-        return render("/error/nginx.html", templates=templates, access_counter=None, request=request, status_code=status_code, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
+        return render("/error/nginx.html", request=request, templates=templates, status_code=status_code, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
     else:
-        return render_error_page(templates=templates, request=request, status_code=status_code)
+        return render_error_page(request=request, templates=templates, status_code=status_code)
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD"])
 async def default_response(request: Request, full_path: str) -> Response:
-    return render(full_path, templates=templates, access_counter=access_counter, request=request)
+    return render(full_path, request=request, templates=templates, access_counter=access_counter)

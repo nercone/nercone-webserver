@@ -90,7 +90,7 @@ def resolve_shorturl(path: str) -> str | None:
 
     return None
 
-def render(path: str, templates: Jinja2Templates, access_counter: AccessCounter | None, request: Request, status_code: int = 200, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
+def render(path: str, request: Request, templates: Jinja2Templates, access_counter: AccessCounter | None = None, status_code: int = 200, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
     try:
         if page := resolve_page(path):
             markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
@@ -144,7 +144,7 @@ def render(path: str, templates: Jinja2Templates, access_counter: AccessCounter 
             else:
                 response.headers["ETag"] = etag
 
-            if access_counter and response.status_code != 304:
+            if access_counter:
                 access_counter.increase()
 
         elif file := resolve_file(path):
@@ -164,13 +164,12 @@ def render(path: str, templates: Jinja2Templates, access_counter: AccessCounter 
 
     return response
 
-def render_error_page(templates: Jinja2Templates, request: Request, status_code: int, message: str | None = None, joke_message: str | None = None) -> Response:
+def render_error_page(request: Request, templates: Jinja2Templates, status_code: int, message: str | None = None, joke_message: str | None = None) -> Response:
     if Files.error.is_file():
         return render(
             str(Files.error.relative_to(Directories.public)),
-            templates=templates,
-            access_counter=None,
             request=request,
+            templates=templates,
             status_code=status_code,
             context={
                 "status_code": status_code,
