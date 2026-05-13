@@ -115,17 +115,21 @@ https://github.com/nercone-dev/website-contents.git
 │   │   └── ...
 │   ├── fonts - フォント
 │   │   ├── InterBIZUD-Regular.ttf
+│   │   ├── InterBIZUD-Regular.woff2
 │   │   ├── InterBIZUD-Italic.ttf
+│   │   ├── InterBIZUD-Italic.woff2
 │   │   ├── InterBIZUD-Bold.ttf
+│   │   ├── InterBIZUD-Bold.woff2
 │   │   ├── InterBIZUD-BoldItalic.ttf
+│   │   ├── InterBIZUD-BoldItalic.woff2
 │   │   ├── MesloBIZUD-Regular.ttf
+│   │   ├── MesloBIZUD-Regular.woff2
 │   │   ├── MesloBIZUD-Italic.ttf
+│   │   ├── MesloBIZUD-Italic.woff2
 │   │   ├── MesloBIZUD-Bold.ttf
+│   │   ├── MesloBIZUD-Bold.woff2
 │   │   ├── MesloBIZUD-BoldItalic.ttf
-│   │   ├── MesloLGSNerdFont-Regular.woff2
-│   │   ├── MesloLGSNerdFont-Italic.woff2
-│   │   ├── MesloLGSNerdFont-Bold.woff2
-│   │   └── MesloLGSNerdFont-BoldItalic.woff2
+│   │   └── MesloBIZUD-BoldItalic.woff2
 │   ├── css
 │   │   ├── pages - ページ固有のスタイル
 │   │   │   ├── big-text.css
