@@ -133,7 +133,7 @@ def render(path: str, request: Request, templates: Jinja2Templates, access_count
 
                     body_rendered = templates.env.from_string(body).render(request=request, **context)
                     html = htmlitdown(body_rendered)
-                    source = "{{% extends \"/base.html\" %}}\n"
+                    source = "{% extends \"/base.html\" %}\n"
                     for block in front:
                         source += f"{{% block {block} %}}{front[block]}{{% endblock %}}\n"
                     source += f"{{% block main %}}\n{html}\n{{% endblock %}}\n"
