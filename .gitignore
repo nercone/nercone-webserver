@@ -1,17 +1,14 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__
+
+# Lock files
+*.lock
+
 # Database files
 databases/*.db
 
 # Log files
 logs/*.log
-logs/**/*.log
-logs/**/*.txt
-
-# macOS
-.DS_Store
-*/.DS_Store
-**/.DS_Store
-
-# Python's Cache
-__pycache__
-*/__pycache__
-**/__pycache__

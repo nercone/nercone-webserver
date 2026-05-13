@@ -2,6 +2,7 @@ import time
 import uuid
 import rjsmin
 import rcssmin
+import minify_html
 from scour import scour
 from fastapi import Response
 from fastapi.responses import PlainTextResponse
@@ -118,7 +119,15 @@ class Middleware:
     async def _send(self, response: Response, scope, receive, send, timings: dict, request_start: float):
         content_type = response.headers.get("content-type", "")
 
-        if "text/css" in content_type:
+        if "text/html" in content_type:
+            minify_start = time.perf_counter()
+            try:
+                response.body = minify_html.minify(response.body.decode("utf-8", errors="replace"), minify_js=True, minify_css=True, keep_comments=True).encode("utf-8")
+            except Exception:
+                pass
+            timings["minify"] = timings.get("minify", 0.0) + (time.perf_counter() - minify_start) * 1000
+
+        elif "text/css" in content_type:
             minify_start = time.perf_counter()
             try:
                 response.body = rcssmin.cssmin(response.body.decode("utf-8", errors="replace")).encode("utf-8")

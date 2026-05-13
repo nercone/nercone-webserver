@@ -5,7 +5,7 @@ build-backend = "uv_build"
 [project]
 name = "nercone-website"
 version = "1.0.0"
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 dependencies = [
     "websockets",
     "httpx[http2]",
@@ -23,7 +23,8 @@ dependencies = [
 
     "scour",
     "rjsmin",
-    "rcssmin"
+    "rcssmin",
+    "minify-html"
 ]
 
 [project.scripts]
