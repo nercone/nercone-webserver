@@ -1,6 +1,7 @@
 import time
 import uuid
 import json
+import fcntl
 from starlette.types import Scope
 from datetime import datetime, timezone
 from .config import Files
@@ -29,6 +30,7 @@ def log_access(scope: Scope, id: str = None, write: bool = False) -> tuple[dict,
     }
     if write:
         with Files.Logs.access.open("a", encoding="utf-8") as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
             f.write(json.dumps(log, ensure_ascii=False) + "\n")
     return log
 
@@ -39,5 +41,6 @@ def finalize_log(log: dict, status_code: int, start_time: float, timings: dict |
         log["timings"] = {k: round(v, 3) for k, v in timings.items()}
     if write:
         with Files.Logs.access.open("a", encoding="utf-8") as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
             f.write(json.dumps(log, ensure_ascii=False) + "\n")
     return log

@@ -190,9 +190,8 @@ thumbnail_font_files = [
 
 def render_thumbnail_svg(path: str, title: str = "Untitled Page", description: str = "No description.", template: str = "normal") -> str:
     if file := resolve_file(f"/assets/images/thumbnails/{template}.svg"):
-        with file.open("r", encoding="utf-8") as f:
-            svg = f.read()
         parts = [p for p in path.strip("/").split("/") if p]
+        svg = file.read_text(encoding="utf-8")
         svg = svg.replace("__PATH__", escape("nercone.dev / " + " / ".join(parts) if parts else "nercone.dev"))
         svg = svg.replace("__TITLE__", escape(title))
         svg = svg.replace("__DESCRIPTION__", escape(description))

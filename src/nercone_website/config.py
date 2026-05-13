@@ -22,6 +22,9 @@ class Files:
     class Databases:
         access_counter = Directories.databases.joinpath("access_counter.db")
 
+    class Cache:
+        google_fonts = Directories.databases.joinpath("google_fonts.json")
+
 class Repositories:
     class Server:
         url = subprocess.run(["/usr/bin/git", "remote", "get-url", "origin"], text=True, capture_output=True, cwd=Directories.base).stdout.strip()

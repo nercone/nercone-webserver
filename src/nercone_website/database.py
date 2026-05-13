@@ -2,23 +2,31 @@ import sqlite3
 from .config import Files
 
 class AccessCounter:
+    def _connect(self):
+        conn = sqlite3.connect(Files.Databases.access_counter)
+        conn.execute("PRAGMA journal_mode=WAL")
+        return conn
+
     def __init__(self):
-        self._conn = sqlite3.connect(Files.Databases.access_counter)
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("""
+        conn = self._connect()
+        conn.execute("""
         CREATE TABLE IF NOT EXISTS access_counter (
             value INTEGER NOT NULL
         )
         """)
-        self._conn.execute("INSERT OR IGNORE INTO access_counter (rowid, value) VALUES (1, 0)")
-        self._conn.commit()
+        conn.execute("INSERT OR IGNORE INTO access_counter (rowid, value) VALUES (1, 0)")
+        conn.commit()
+        conn.close()
 
     def get(self) -> int:
-        cur = self._conn.cursor()
-        cur.execute("SELECT value FROM access_counter WHERE rowid = 1")
+        conn = self._connect()
+        cur = conn.execute("SELECT value FROM access_counter WHERE rowid = 1")
         row = cur.fetchone()
+        conn.close()
         return row[0] if row else 0
 
     def increase(self):
-        self._conn.execute("UPDATE access_counter SET value = value + 1 WHERE rowid = 1")
-        self._conn.commit()
+        conn = self._connect()
+        conn.execute("UPDATE access_counter SET value = value + 1 WHERE rowid = 1")
+        conn.commit()
+        conn.close()
