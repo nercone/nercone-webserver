@@ -101,7 +101,7 @@ async def google_fonts_css(request: Request):
     else:
         return render_error_page(request=request, templates=templates, status_code=502)
 
-@app.api_route("/assets/images/thumbnails/template/{template}", methods=["GET"])
+@app.api_route("/assets/images/thumbnail/template/{template}", methods=["GET"])
 async def thumbnail(request: Request, template: str) -> Response:
     path = request.query_params.get("path", "/")
     title = request.query_params.get("title", "Untitled Page")
