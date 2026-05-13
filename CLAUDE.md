@@ -259,7 +259,7 @@ https://github.com/nercone-dev/website-contents.git
 - **`Files`** - 各種ファイルへの絶対パス。
 - **`Repositories`** - 起動時に`git`コマンドを実行してリモートURLとコミットハッシュ(short)を取得する。`Server.version`と`Contents.version`としてテンプレートに公開される。
 - **`ErrorMessages`** - HTTPステータスコード別のエラーメッセージ。`normal`(真面目版)と`joke`(ネタ版)の2種類を持つ。エラーページ(`error/index.html`)はJinja2テンプレートとしてレンダリングされ、両方のメッセージが渡される。
-- **`Hostnames`** - 受け付けるホスト名のリスト。`local`・`normal`・`onion`に分類される。信頼されていないIPからの不正なHostヘッダーによるアクセスは400で拒否される。
+- **`Hostnames`** - 受け付けるホスト名のリスト。`local`・`public`・`onion`に分類される。信頼されていないIPからの不正なHostヘッダーによるアクセスは400で拒否される。
 - **`AccessSources`** - 信頼されたIPアドレス範囲 (RFC 1918プライベート・ループバック・APIPA・CGNATなど)。`X-Forwarded-For`ヘッダーを考慮したうえで実質的な送信元IPが信頼範囲内かどうかを判定する。`scope["trusted"]`としてミドルウェアが設定する。
 - **`Options`** - Content-Security-Policy・その他のレスポンスヘッダー・Scourの最小化オプションを定義する。
 - **`UserOptions`** - クエリパラメータとCookieを統合してオプションを取得するヘルパークラス。クエリパラメータのほうがCookieより優先される。クエリパラメータに値がある場合はCookieにも同期する。
