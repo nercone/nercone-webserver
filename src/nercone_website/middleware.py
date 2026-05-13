@@ -1,4 +1,5 @@
 import time
+import uuid
 import rjsmin
 import rcssmin
 from scour import scour
@@ -38,8 +39,9 @@ class Middleware:
         timings: dict[str, float] = {}
         request_start = time.perf_counter()
 
-        scope["log"] = log_access(scope)
+        scope["access_id"] = str(uuid.uuid4())
         scope["trusted"] = AccessSources.is_trusted(scope.get("client", ("", 0))[0], headers.get(b"x-forwarded-for", b"").decode())
+        scope["log"] = log_access(scope)
 
         if not scope["trusted"] and not any([hostname == candidate or hostname.endswith("." + candidate) for candidate in Hostnames.all]):
             response = PlainTextResponse("許可されていないホスト名でのアクセスです。", status_code=400)

@@ -1,18 +1,17 @@
 import time
-import uuid
 import json
 import fcntl
 from starlette.types import Scope
 from datetime import datetime, timezone
 from .config import Files
 
-def log_access(scope: Scope, id: str = None, write: bool = False) -> tuple[dict, float]:
+def log_access(id: str, scope: Scope, write: bool = False) -> tuple[dict, float]:
     client = scope.get("client") or ("", 0)
     server = scope.get("server") or ("", 0)
     headers = dict(scope.get("headers", []))
     hostname = headers.get(b"host", b"").decode().split(":")[0].strip()
     log = {
-        "id": id or str(uuid.uuid4()),
+        "id": id,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "from": {
             "address": client[0],
