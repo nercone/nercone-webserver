@@ -6,7 +6,7 @@
 
 Python 3.12のFastAPI + Uvicornの上で動くASGIアプリケーションであり、`0.0.0.0:8080`でリッスンします。
 
-本番環境ではNginxがリバースプロキシ兼TLS終端として前段に立ち、GCP Compute Engine (AlmaLinux 10.1)上のsystemdサービス(`nercone-website.service`)として常駐しています。
+本番環境ではNginxがリバースプロキシ兼TLS終端として前段に立ち、Dockerコンテナとして実行されます。
 
 コンテンツ (HTML、Markdown、CSS、画像など) は別リポジトリ`website-contents`で管理されており、`git submodule`を使用し`public/`ディレクトリにマウントされています。
 
@@ -45,21 +45,22 @@ https://github.com/nercone-dev/website.git
 ├── .gitmodules
 ├── README.md
 ├── CLAUDE.md
-├── LICENSE - MITライセンス
+├── LICENSE
+├── uv.lock
+├── Dockerfile
+├── docker-compose.yml
 ├── pyproject.toml - Pythonプロジェクト設定用ファイル
-├── start.sh - 本番環境向けのサーバー起動用スクリプト
-├── update.sh - 本番環境向けのサーバー自動更新用スクリプト
-├── update-contents.sh - サーバー自体には変更がなく、サブモジュールにのみ変更がある場合のための手動更新用スクリプト
-├── nercone-website.service - メインのsystemdサービス (実行内容はsudo bash start.shと同等)
-├── nercone-website-autoupdater.service - 自動更新用のsystemdサービス (実行内容はsudo bash update.shと同等)
-└── nercone-website-autoupdater.timer - 自動更新用のsystemdタイマー (毎日0:00 UTCに起動)
+├── update.sh - サーバー更新用スクリプト
+└── update-contents.sh - サーバー自体には変更がなく、サブモジュールにのみ変更がある場合のための更新用スクリプト
 ```
 
-`config.py`の`Directories.public`は`Path.cwd() / "public"`で解決されます。そのため、サーバーは必ず`website/`ディレクトリをカレントディレクトリとして起動しなければなりません。
+`config.py`の`Directories.public`は`Path.cwd() / "public"`で解決されます。Dockerコンテナはワーキングディレクトリを`/srv/website`に設定します。
 
 `update.sh`/`update-contents.sh`は(ネストされたサブモジュールを含む)全てのサブモジュールを再帰的に取得・マージするため、publicのコミットIDの変更をリモートに反映する必要はありません。
 
 UvicornのログにはPythonのトレースバックを含むため、5XXエラーなどの際のデバッグのために`uvicorn.log`を生成するように設定しています。
+
+Dockerコンテナは`docker-compose.yml`で定義され、ポート8080でリッスンします。`databases/`と`logs/`ディレクトリはボリュームマウントされ、コンテナ停止後もデータが永続化されます。
 
 ### コンテンツリポジトリ
 ```
