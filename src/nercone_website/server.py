@@ -46,6 +46,7 @@ templates.env.globals["get_daily_quote"] = get_daily_quote
 async def ping(request: Request):
     return PlainTextResponse("pong!", status_code=200)
 
+@app.api_route("/echo", methods=["GET"])
 async def echo(request: Request):
     if not request.scope.get("trusted", False):
         return render_error_page(request=request, templates=templates, status_code=403, message="<code>/echo</code>エンドポイントはデバッグ用途のため、信頼されている一部のIP範囲からのアクセスに限定して許可されています。", joke_message="のっととらすてっど")
