@@ -4,10 +4,6 @@
 # Python
 __pycache__
 
-# Lock files
-*.lock
-!uv.lock
-
 # Database files
 databases/*.db
 
