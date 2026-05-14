@@ -4,6 +4,7 @@ services:
     build: .
     restart: unless-stopped
     volumes:
+      - "./.git:/srv/website/.git:ro"
       - "./databases:/srv/website/databases"
       - "./logs:/srv/website/logs"
       - "./public:/srv/website/public"
