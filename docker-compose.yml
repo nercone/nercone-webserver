@@ -1,0 +1,11 @@
+services:
+  website:
+    container_name: website
+    build: .
+    restart: unless-stopped
+    volumes:
+      - "./databases:/srv/website/databases"
+      - "./logs:/srv/website/logs"
+      - "./public:/srv/website/public"
+    ports:
+      - "8080:8080"

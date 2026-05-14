@@ -1,1 +1,3 @@
-/usr/bin/git submodule update --remote --merge --recursive
+#!/usr/bin/env bash
+set -e
+git submodule update --remote --merge --recursive
