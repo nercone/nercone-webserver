@@ -43,29 +43,11 @@ def get_daily_quote() -> str:
 templates.env.globals["get_daily_quote"] = get_daily_quote
 
 @app.api_route("/ping", methods=["GET"])
-async def ping(request: Request):
+async def ping():
     return PlainTextResponse("pong!", status_code=200)
 
-@app.api_route("/echo", methods=["GET"])
-async def echo(request: Request):
-    if not request.scope.get("trusted", False):
-        return render_error_page(request=request, templates=templates, status_code=403, message="echoエンドポイントはデバッグ用途のため、信頼されている一部のIP範囲からのアクセスに限定して許可されています。", joke_message="のっととらすてっど")
-    return JSONResponse(request.scope["log"], status_code=200)
-
-@app.api_route("/status", methods=["GET"])
-async def status(request: Request):
-    return JSONResponse(
-        {
-            "status": "ok",
-            "version": {"server": Repositories.Server.version, "content": Repositories.Contents.version},
-            "quote": get_daily_quote(),
-            "counter": access_counter.get()
-        },
-        status_code=200
-    )
-
 @app.api_route("/welcome", methods=["GET"])
-async def welcome(request: Request):
+async def welcome():
     return PlainTextResponse(
         f"""
 ■   ■ ■■■■■ ■■■■   ■■■■  ■■■  ■   ■ ■■■■■
@@ -81,6 +63,24 @@ welcome to nercone.dev!
         """.strip() + "\n",
         status_code=200
     )
+
+@app.api_route("/status", methods=["GET"])
+async def status():
+    return JSONResponse(
+        {
+            "status": "ok",
+            "version": {"server": Repositories.Server.version, "content": Repositories.Contents.version},
+            "quote": get_daily_quote(),
+            "counter": access_counter.get()
+        },
+        status_code=200
+    )
+
+@app.api_route("/echo", methods=["GET"])
+async def echo(request: Request):
+    if not request.scope.get("trusted", False):
+        return render_error_page(request=request, templates=templates, status_code=403, message="echoエンドポイントはデバッグ用途のため、信頼されている一部のIP範囲からのアクセスに限定して許可されています。", joke_message="のっととらすてっど")
+    return JSONResponse(request.scope["log"], status_code=200)
 
 @app.api_route("/assets/css/google-fonts.css", methods=["GET"])
 async def google_fonts_css(request: Request):
