@@ -108,6 +108,31 @@ https://github.com/nercone-dev/website-contents.git
 │   │   │   ├── icon-mask-inverted.svg
 │   │   │   ├── icon-mask-inverted.png
 │   │   │   └── icon-mask-inverted.webp
+│   │   ├── dotgirl
+│   │   │   ├── icon.ai
+│   │   │   ├── icon.svg
+│   │   │   ├── icon.png
+│   │   │   ├── icon.webp
+│   │   │   ├── icon-rounded.ai
+│   │   │   ├── icon-rounded.svg
+│   │   │   ├── icon-rounded.png
+│   │   │   ├── icon-rounded.webp
+│   │   │   ├── icon-mask.ai
+│   │   │   ├── icon-mask.svg
+│   │   │   ├── icon-mask.png
+│   │   │   ├── icon-mask.webp
+│   │   │   ├── icon-mask-inverted.ai
+│   │   │   ├── icon-mask-inverted.svg
+│   │   │   ├── icon-mask-inverted.png
+│   │   │   └── icon-mask-inverted.webp
+│   │   │   ├── icon-outline.ai
+│   │   │   ├── icon-outline.svg
+│   │   │   ├── icon-outline.png
+│   │   │   ├── icon-outline.webp
+│   │   │   ├── icon-original.ai
+│   │   │   ├── icon-original.svg
+│   │   │   ├── icon-original.png
+│   │   │   ├── icon-original.webp
 │   │   ├── thumbnail
 │   │   │   ├── template
 │   │   │   │   ├── normal.ai
