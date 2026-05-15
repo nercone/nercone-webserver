@@ -24,7 +24,9 @@ dependencies = [
     "minify-html",
     "rcssmin",
     "rjsmin",
-    "scour"
+    "scour",
+
+    "asyncpg"
 ]
 
 [project.scripts]

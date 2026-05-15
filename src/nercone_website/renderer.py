@@ -167,7 +167,8 @@ def render(path: str, request: Request, templates: Jinja2Templates, access_count
 
     return response
 
-def render_error_page(request: Request, templates: Jinja2Templates, status_code: int, message: str | None = None, joke_message: str | None = None) -> Response:
+def render_error_page(request: Request, templates: Jinja2Templates | None = None, status_code: int = 500, message: str | None = None, joke_message: str | None = None) -> Response:
+    templates = templates or Jinja2Templates(directory=Directories.public)
     if Files.error.is_file():
         return render(
             str(Files.error.relative_to(Directories.public)),

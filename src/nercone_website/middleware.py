@@ -1,79 +1,103 @@
 import time
 import uuid
+import fcntl
+import traceback
 import rjsmin
 import rcssmin
 import minify_html
 from scour import scour
+from datetime import datetime, timezone
 from fastapi import Response
 from fastapi.responses import PlainTextResponse
+from starlette.requests import Request as StarletteRequest
 from starlette.types import Scope, ASGIApp, Receive, Send
 
 from .logger import log_access, finalize_log
-from .config import Repositories, Hostnames, AccessSources, Options
+from .config import Repositories, Hostnames, AccessSources, Options, Files
+from .renderer import render_error_page
+
+def write_error_log(access_id: str, tb: str):
+    timestamp = datetime.now(timezone.utc).isoformat()
+    entry = f"[{timestamp} access_id={access_id}]\n{tb}\n"
+    try:
+        with Files.Logs.error.open("a", encoding="utf-8") as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            f.write(entry)
+    except Exception:
+        pass
 
 class Middleware:
     def __init__(self, app: ASGIApp):
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
-        if scope["type"] not in ("http", "websocket"):
-            await self.app(scope, receive, send)
-            return
+        scope["access_id"] = str(uuid.uuid4())
 
-        headers = dict(scope.get("headers", []))
-        hostname = headers.get(b"host", b"").decode().split(":")[0].strip()
+        try:
+            if scope["type"] not in ("http", "websocket"):
+                await self.app(scope, receive, send)
+                return
 
-        hostname_parts = hostname.split(".")
-        if hostname_parts[1:] == ["localhost"]:
-            subdomain = ".".join(hostname_parts[:-1])
-        else:
-            subdomain = ".".join(hostname_parts[:-2])
+            headers = dict(scope.get("headers", []))
+            hostname = headers.get(b"host", b"").decode().split(":")[0].strip()
 
-        if scope["type"] == "websocket":
+            hostname_parts = hostname.split(".")
+            if hostname_parts[1:] == ["localhost"]:
+                subdomain = ".".join(hostname_parts[:-1])
+            else:
+                subdomain = ".".join(hostname_parts[:-2])
+
+            if scope["type"] == "websocket":
+                if subdomain not in ["", "www"]:
+                    original_path = scope["path"] if scope["path"].strip() else "/"
+                    subdomain_path = f"/{'/'.join(subdomain.split('.')[::-1])}{original_path}"
+                    scope = dict(scope, path=subdomain_path)
+                await self.app(scope, receive, send)
+                return
+
+            timings: dict[str, float] = {}
+            request_start = time.perf_counter()
+
+            scope["trusted"] = AccessSources.is_trusted(scope.get("client", ("", 0))[0], headers.get(b"x-forwarded-for", b"").decode())
+            scope["log"] = log_access(scope["access_id"], scope=scope)
+
+            if not scope["trusted"] and not any([hostname == candidate or hostname.endswith("." + candidate) for candidate in Hostnames.all]):
+                response = PlainTextResponse("許可されていないホスト名でのアクセスです。", status_code=400)
+                await self._send(response, scope, receive, send, timings, request_start)
+                await finalize_log(scope["log"], response.status_code, request_start, timings)
+                return
+
+            recv_start = time.perf_counter()
+            body = await self._read_body(receive)
+            timings["recv"] = (time.perf_counter() - recv_start) * 1000
+
+            async def cached_receive():
+                return {"type": "http.request", "body": body, "more_body": False}
+
             if subdomain not in ["", "www"]:
                 original_path = scope["path"] if scope["path"].strip() else "/"
                 subdomain_path = f"/{'/'.join(subdomain.split('.')[::-1])}{original_path}"
-                scope = dict(scope, path=subdomain_path)
-            await self.app(scope, receive, send)
-            return
 
-        timings: dict[str, float] = {}
-        request_start = time.perf_counter()
+                response = await self._get_response(scope, cached_receive, subdomain_path, timings, "app")
+                if response.status_code < 400 or response.status_code >= 500:
+                    await self._send(response, scope, cached_receive, send, timings, request_start)
+                    await finalize_log(scope["log"], response.status_code, request_start, timings)
+                    return
 
-        scope["access_id"] = str(uuid.uuid4())
-        scope["trusted"] = AccessSources.is_trusted(scope.get("client", ("", 0))[0], headers.get(b"x-forwarded-for", b"").decode())
-        scope["log"] = log_access(scope["access_id"], scope=scope)
-
-        if not scope["trusted"] and not any([hostname == candidate or hostname.endswith("." + candidate) for candidate in Hostnames.all]):
-            response = PlainTextResponse("許可されていないホスト名でのアクセスです。", status_code=400)
-            await self._send(response, scope, receive, send, timings, request_start)
-            finalize_log(scope["log"], response.status_code, request_start, timings)
-            return
-
-        recv_start = time.perf_counter()
-        body = await self._read_body(receive)
-        timings["recv"] = (time.perf_counter() - recv_start) * 1000
-
-        async def cached_receive():
-            return {"type": "http.request", "body": body, "more_body": False}
-
-        if subdomain not in ["", "www"]:
-            original_path = scope["path"] if scope["path"].strip() else "/"
-            subdomain_path = f"/{'/'.join(subdomain.split('.')[::-1])}{original_path}"
-
-            response = await self._get_response(scope, cached_receive, subdomain_path, timings, "app")
-            if response.status_code < 400 or response.status_code >= 500:
+                response = await self._get_response(scope, cached_receive, original_path, timings, "app-retry")
                 await self._send(response, scope, cached_receive, send, timings, request_start)
-                finalize_log(scope["log"], response.status_code, request_start, timings)
-                return
+                await finalize_log(scope["log"], response.status_code, request_start, timings)
+            else:
+                response = await self._get_response(scope, cached_receive, scope["path"], timings, "app")
+                await self._send(response, scope, cached_receive, send, timings, request_start)
+                await finalize_log(scope["log"], response.status_code, request_start, timings)
 
-            response = await self._get_response(scope, cached_receive, original_path, timings, "app-retry")
-            await self._send(response, scope, cached_receive, send, timings, request_start)
-            finalize_log(scope["log"], response.status_code, request_start, timings)
-        else:
-            response = await self._get_response(scope, cached_receive, scope["path"], timings, "app")
-            await self._send(response, scope, cached_receive, send, timings, request_start)
-            finalize_log(scope["log"], response.status_code, request_start, timings)
+        except Exception:
+            write_error_log(scope.get("access_id", "unknown"), traceback.format_exc())
+            try:
+                return render_error_page(StarletteRequest(scope=scope, receive=receive), status_code=500)
+            except Exception:
+                return PlainTextResponse("Internal Server Error", status_code=500)
 
     async def _get_response(self, scope: Scope, receive: Receive, path: str, timings: dict, key: str) -> Response:
         new_scope = dict(scope, path=path)

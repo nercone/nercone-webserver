@@ -1,3 +1,4 @@
+import os
 import ipaddress
 import subprocess
 from scour import scour
@@ -14,13 +15,10 @@ class Files:
     quotes = Directories.public.joinpath("quotes.txt")
     shorturls = Directories.public.joinpath("shorturls.json")
     error = Directories.public.joinpath("error", "index.html")
+    access_counter = Directories.databases.joinpath("access_counter.txt")
 
     class Logs:
-        uvicorn = Directories.logs.joinpath("uvicorn.log")
-        access = Directories.logs.joinpath("access.log")
-
-    class Databases:
-        access_counter = Directories.databases.joinpath("access_counter.db")
+        error = Directories.logs.joinpath("error.log")
 
     class Cache:
         google_fonts = Directories.databases.joinpath("google_fonts.json")
@@ -146,6 +144,8 @@ class AccessSources:
         return True
 
 class Options:
+    database_url = os.environ.get("DATABASE_URL", "postgresql://website:website@localhost:5432/website")
+
     scour_options = scour.generateDefaultOptions()
     scour_options.newlines = False
     scour_options.shorten_ids = True

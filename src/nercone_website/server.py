@@ -4,16 +4,23 @@ import httpx
 import random
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import PlainTextResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from .config import Directories, Files, Repositories, Hostnames
 from .renderer import render, render_error_page, render_thumbnail_png
-from .database import AccessCounter
+from .database import AccessCounter, init_db, close_pool
 from .middleware import Middleware
 
-app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+@asynccontextmanager
+async def lifespan(app):
+    await init_db()
+    yield
+    await close_pool()
+
+app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
 app.add_middleware(Middleware)
 templates = Jinja2Templates(directory=Directories.public)
 access_counter = AccessCounter()

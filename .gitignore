@@ -5,7 +5,7 @@
 __pycache__
 
 # Database files
-databases/*.db
+databases/*
 
 # Log files
-logs/*.log
+logs/*

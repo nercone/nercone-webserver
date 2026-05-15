@@ -1,5 +1,4 @@
 import uvicorn
-from .config import Files, Directories
 
 def main():
     log_config = {
@@ -12,11 +11,6 @@ def main():
             }
         },
         "handlers": {
-            "file": {
-                "class": "logging.FileHandler",
-                "filename": str(Files.Logs.uvicorn.relative_to(Directories.base)),
-                "formatter": "default"
-            },
             "console": {
                 "class": "logging.StreamHandler",
                 "stream": "ext://sys.stdout",
@@ -24,9 +18,9 @@ def main():
             }
         },
         "loggers": {
-            "uvicorn": {"handlers": ["file", "console"], "level": "INFO", "propagate": False},
-            "uvicorn.error": {"handlers": ["file", "console"], "level": "INFO", "propagate": False},
-            "uvicorn.access": {"handlers": ["file", "console"], "level": "INFO", "propagate": False}
+            "uvicorn": {"handlers": ["console"], "level": "INFO", "propagate": False},
+            "uvicorn.error": {"handlers": ["console"], "level": "INFO", "propagate": False},
+            "uvicorn.access": {"handlers": ["console"], "level": "INFO", "propagate": False}
         }
     }
     uvicorn.run("nercone_website.server:app", host="0.0.0.0", port=8080, workers=4, server_header=False, log_config=log_config)
