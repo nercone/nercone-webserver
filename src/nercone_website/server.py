@@ -120,6 +120,8 @@ async def thumbnail(request: Request, template: str) -> Response:
         return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-cache"})
     except FileNotFoundError:
         return render_error_page(request=request, templates=templates, status_code=500, message="サムネイルの生成に必要なテンプレートが見つかりません。", joke_message="はにゃ？")
+    except PermissionError:
+        return render_error_page(request=request, templates=templates, status_code=403, message="ねえ、今サムネイル生成のエンドポイント悪用して攻撃しようとした？したよね？？ディレクトリトラバーサルでしょ？知ってるよ？怒ってないから正直に言って？ね？ね？？", joke_message="嘘つきには針千本プレゼント！このメッセージを読んだ後、100年以内限定！飲用補助サービスが無料でついてきます！今すぐ正直に言え！！")
 
 @app.api_route("/error/{status_code}", methods=["GET"])
 async def fake_error_page(request: Request, status_code: str):

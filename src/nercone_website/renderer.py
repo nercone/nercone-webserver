@@ -205,5 +205,5 @@ def render_thumbnail_svg(path: str, title: str = "Untitled Page", description: s
 
 def render_thumbnail_png(path: str, title: str = "Untitled Page", description: str = "No description.", template: str = "normal") -> bytes:
     svg = render_thumbnail_svg(path=path, title=title, description=description, template=template)
-    png = resvg_py.svg_to_bytes(svg, font_files=thumbnail_font_files, width=1200, height=630)
+    png = resvg_py.svg_to_bytes(svg, font_files=thumbnail_font_files, width=1280, height=640)
     return png
