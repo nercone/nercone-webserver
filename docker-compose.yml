@@ -2,14 +2,13 @@ services:
   website:
     container_name: website
     build: .
+    network_mode: host
     restart: unless-stopped
     volumes:
       - "./.git:/srv/website/.git:ro"
       - "./databases:/srv/website/databases"
       - "./logs:/srv/website/logs:ro"
       - "./public:/srv/website/public:ro"
-    ports:
-      - "8080:8080"
     environment:
       - DATABASE_URL=postgresql://website:website@postgres:5432/website
     depends_on:
