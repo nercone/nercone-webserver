@@ -2,6 +2,7 @@ services:
   website:
     container_name: website
     build: .
+    network_mode: host
     restart: unless-stopped
     volumes:
       - pg_socket:/run/postgresql
