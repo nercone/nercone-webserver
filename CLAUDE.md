@@ -184,16 +184,16 @@ https://github.com/nercone-dev/website-contents.git
 │   │   │   ├── index.css
 │   │   │   ├── links.css
 │   │   │   └── qr-code.css
-│   │   ├── themes - テーマ切り替え機能 (未完成)
+│   │   ├── themes - テーマ
 │   │   │   ├── dark.css
 │   │   │   └── light.css
 │   │   ├── main.css - メイン/共通
 │   │   ├── fonts.css - フォント
 │   │   ├── colors.css - カラーパレット
 │   │   ├── cursor.css - カスタムカーソル
+│   │   ├── components.css - UIコンポーネント
 │   │   ├── view-transition.css - ページ遷移時アニメーション
 │   │   ├── loading-overlay.css - アクセス時のオーバーレイアニメーション
-│   │   └── sidebar.css - サイドバーレイアウト
 │   ├── js
 │   │   ├── pages - ページ固有のスクリプト
 │   │   │   └── index.js
