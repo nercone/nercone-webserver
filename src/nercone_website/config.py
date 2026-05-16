@@ -144,7 +144,7 @@ class AccessSources:
         return True
 
 class Options:
-    database_url = os.environ.get("DATABASE_URL", "postgresql://website:website@localhost:5432/website")
+    database_url = os.environ.get("DATABASE_URL", "postgresql://website:website@/website?host=/run/postgresql")
 
     scour_options = scour.generateDefaultOptions()
     scour_options.newlines = False
