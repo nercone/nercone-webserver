@@ -2,8 +2,11 @@ services:
   website:
     container_name: website
     build: .
-    network_mode: host
     restart: unless-stopped
+    ports:
+      - target: 8080
+        published: 8080
+        mode: host
     volumes:
       - "./.git:/srv/website/.git:ro"
       - "./databases:/srv/website/databases"
