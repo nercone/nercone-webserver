@@ -166,13 +166,17 @@ class UserOptions:
         return len(self.request.cookies | self.request.query_params)
 
     def get(self, key: str, default: str | None = None):
+        once = self.request.query_params.get(key + ".once", None)
         query = self.request.query_params.get(key, None)
         cookie = self.request.cookies.get(key, None)
-        return query or cookie or default or self.defaults.get(key)
+        return once or query or cookie or default or self.defaults.get(key)
+
+    def set(self, response: Response, key: str, value: str):
+        response.set_cookie(key, value, samesite="lax")
 
     def apply(self, response: Response):
         queries = self.request.query_params
         cookies = self.request.cookies
         for key in queries:
-            if cookies.get(key) != queries.get(key) or self.defaults.get(key) != (queries[key] or cookies[key]):
+            if cookies.get(key) != queries.get(key) or self.defaults.get(key) != (queries[key] or cookies[key]) and not key.endswith(".once"):
                 response.set_cookie(key, queries[key], samesite="lax")
