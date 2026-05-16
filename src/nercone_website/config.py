@@ -152,6 +152,10 @@ class Options:
     scour_options.strip_comments = True
 
 class UserOptions:
+    defaults = {
+        "dev.nercone.useroptions.apperance.theme": "dark"
+    }
+
     def __init__(self, request: Request):
         self.request = request
 
@@ -164,11 +168,11 @@ class UserOptions:
     def get(self, key: str, default: str | None = None):
         query = self.request.query_params.get(key, None)
         cookie = self.request.cookies.get(key, None)
-        return query or cookie or default
+        return query or cookie or default or self.defaults.get(key)
 
     def apply(self, response: Response):
         queries = self.request.query_params
         cookies = self.request.cookies
         for key in queries:
-            if key in cookies and cookies[key] != (queries[key]):
+            if cookies.get(key) != queries.get(key) and self.defaults.get(key) != (queries[key] or cookies[key]):
                 response.set_cookie(key, queries[key], samesite="lax")

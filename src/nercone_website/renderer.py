@@ -15,7 +15,7 @@ from starlette.templating import Jinja2Templates
 from fastapi import Request, Response
 from fastapi.responses import PlainTextResponse, FileResponse, RedirectResponse
 
-from .config import Directories, Files, ErrorMessages
+from .config import Directories, Files, ErrorMessages, UserOptions
 from .database import AccessCounter
 
 markitdown = MarkItDown()
@@ -94,6 +94,7 @@ def resolve_shorturl(path: str) -> str | None:
     return None
 
 def render(path: str, request: Request, templates: Jinja2Templates, access_counter: AccessCounter | None = None, status_code: int = 200, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
+    context["useroptions"] = UserOptions(request)
     markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
     markdown_mode = any([path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])])
 
@@ -164,6 +165,8 @@ def render(path: str, request: Request, templates: Jinja2Templates, access_count
 
     for key, value in headers.items():
         response.headers[key.lower().strip()] = value
+
+    context["useroptions"].apply(response)
 
     return response
 
