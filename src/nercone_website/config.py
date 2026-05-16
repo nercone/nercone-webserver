@@ -174,5 +174,5 @@ class UserOptions:
         queries = self.request.query_params
         cookies = self.request.cookies
         for key in queries:
-            if cookies.get(key) != queries.get(key) and self.defaults.get(key) != (queries[key] or cookies[key]):
+            if cookies.get(key) != queries.get(key) or self.defaults.get(key) != (queries[key] or cookies[key]):
                 response.set_cookie(key, queries[key], samesite="lax")
