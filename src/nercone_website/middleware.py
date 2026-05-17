@@ -100,6 +100,9 @@ class Middleware:
                 return PlainTextResponse("Internal Server Error", status_code=500)
 
     async def _get_response(self, scope: Scope, receive: Receive, path: str, timings: dict, key: str) -> Response:
+        if path != "/" and path.endswith("/"):
+            path = path.rstrip("/")
+
         new_scope = dict(scope, path=path)
 
         status_code = 200
@@ -122,9 +125,6 @@ class Middleware:
             content=b"".join(body_parts),
             status_code=status_code,
         )
-
-        if response.status_code == 404 and path != "/" and path.endswith("/"):
-            return await self._get_response(scope, receive, path.rstrip("/"), timings, key)
 
         for k, v in resp_headers:
             response.headers.raw.append((k, v))
