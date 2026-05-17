@@ -84,8 +84,8 @@ class ErrorMessages:
 class Hostnames:
     local = ["localhost", "127.0.0.1"]
     public = ["nercone.dev", "nerc1.dev", "diamondgotcat.net", "d-g-c.net"]
-    onion = "4sbb7xhdn4meuesnqvcreewk6sjnvchrsx4lpnxmnjhz2soat74finid.onion"
-    all = local + public + [onion]
+    onion = ["nerconexssicpt442ngh5lt7hwyh47sk3rob3iei263s7lcjann633id.onion", "4sbb7xhdn4meuesnqvcreewk6sjnvchrsx4lpnxmnjhz2soat74finid.onion"]
+    all = local + public + onion
 
 class AccessSources:
     trusted = [

@@ -28,7 +28,7 @@ access_counter = AccessCounter()
 templates.env.globals["get_access_count"] = access_counter.get
 templates.env.globals["server_version"] = Repositories.Server.version
 templates.env.globals["contents_version"] = Repositories.Contents.version
-templates.env.globals["onion_site_url"] = f"http://{Hostnames.onion}/"
+templates.env.globals["onion_site_url"] = f"http://{Hostnames.onion[0]}/"
 templates.env.filters["re_sub"] = lambda s, pattern, repl: re.sub(pattern, repl, s)
 
 def this_year() -> int:
