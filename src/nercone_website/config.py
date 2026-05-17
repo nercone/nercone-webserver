@@ -88,7 +88,7 @@ class Hostnames:
     all = local + public + onion
 
 class AccessSources:
-    trusted = [
+    trusted_networks = [
         "10.0.0.0/8",
         "172.16.0.0/12",
         "192.168.0.0/16",
@@ -101,47 +101,15 @@ class AccessSources:
 
         "100.64.0.0/10"
     ]
-    networks = [ipaddress.ip_network(n) for n in trusted]
 
     @staticmethod
     def is_trusted(ip: str, forwarded_for: str = "") -> bool:
-        try:
-            addr = ipaddress.ip_address(ip)
-            ip_is_trusted = any(addr in net for net in AccessSources.networks)
-        except ValueError:
-            return False
-
-        if not ip_is_trusted:
-            return False
-
-        if forwarded_for:
+        networks = [ipaddress.ip_network(network) for network in AccessSources.trusted_networks]
+        if any(ipaddress.ip_address(ip) in network for network in networks):
             entries = [e.strip() for e in forwarded_for.split(",")]
-
-            proxy_idx = None
-            for i in range(len(entries) - 1, -1, -1):
-                try:
-                    if entries[i] and ipaddress.ip_address(entries[i]) == addr:
-                        proxy_idx = i
-                        break
-                except ValueError:
-                    continue
-
-            if proxy_idx is None:
+            if not forwarded_for or any(ipaddress.ip_address(entries[0]) in network for network in networks):
                 return True
-
-            if proxy_idx == 0:
-                return True
-
-            effective_entry = entries[proxy_idx - 1]
-            if not effective_entry:
-                return True
-            try:
-                effective_addr = ipaddress.ip_address(effective_entry)
-                return any(effective_addr in net for net in AccessSources.networks)
-            except ValueError:
-                return False
-
-        return True
+        return False
 
 class Options:
     database_url = os.environ.get("DATABASE_URL", "postgresql://website:website@/website?host=/run/postgresql")
