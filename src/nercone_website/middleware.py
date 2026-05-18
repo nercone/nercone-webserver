@@ -1,11 +1,11 @@
 import time
-import uuid
 import fcntl
 import traceback
 import rjsmin
 import rcssmin
 import minify_html
 from scour import scour
+from fourword.lib import FourWord
 from datetime import datetime, timezone
 from fastapi import Response
 from fastapi.responses import PlainTextResponse
@@ -31,7 +31,7 @@ class Middleware:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
-        scope["access_id"] = str(uuid.uuid4())
+        scope["access_id"] = FourWord().text
 
         try:
             if scope["type"] not in ("http", "websocket"):

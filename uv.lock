@@ -241,6 +241,15 @@ wheels = [
 ]
 
 [[package]]
+name = "fourword"
+version = "1.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d4/25/29026ab20598152d30b06c0dc4a3a14904807098944b8b849622b91f6c63/fourword-1.0.2.tar.gz", hash = "sha256:074864d720145ecb185829831869bdaee420a0fdb8cc72577698bb89314af1b6", size = 5131, upload-time = "2026-05-18T19:36:53.28Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/78/0a/b79f2deff46c708ae05a23e461c4106c264f9722719b3e987ac537919051/fourword-1.0.2-py3-none-any.whl", hash = "sha256:d3c15911cec4b700c8b06f88df489a4f089620da7aa2a48bcf10d1cdf5b97e55", size = 6552, upload-time = "2026-05-18T19:36:54.121Z" },
+]
+
+[[package]]
 name = "h11"
 version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -541,6 +550,7 @@ dependencies = [
     { name = "asyncpg" },
     { name = "beautifulsoup4" },
     { name = "fastapi" },
+    { name = "fourword" },
     { name = "httpx", extra = ["http2"] },
     { name = "jinja2" },
     { name = "markitdown" },
@@ -559,6 +569,7 @@ requires-dist = [
     { name = "asyncpg" },
     { name = "beautifulsoup4" },
     { name = "fastapi" },
+    { name = "fourword" },
     { name = "httpx", extras = ["http2"] },
     { name = "jinja2" },
     { name = "markitdown" },

@@ -20,8 +20,17 @@ async def init_db():
     pool = await asyncpg.create_pool(Options.database_url, setup=setup_connection)
     async with pool.acquire() as conn:
         await conn.execute("""
+            DO $$
+            BEGIN
+                IF (SELECT data_type FROM information_schema.columns
+                    WHERE table_name='access_logs' AND column_name='id') = 'uuid' THEN
+                    ALTER TABLE access_logs ALTER COLUMN id TYPE TEXT USING id::text;
+                END IF;
+            END $$;
+        """)
+        await conn.execute("""
             CREATE TABLE IF NOT EXISTS access_logs (
-                id            UUID        PRIMARY KEY,
+                id            TEXT        PRIMARY KEY,
                 timestamp     TIMESTAMPTZ NOT NULL,
                 from_address  TEXT,
                 from_port     INTEGER,
@@ -48,7 +57,7 @@ async def insert_access_log(log: dict):
                    (id, timestamp, from_address, from_port, from_trusted,
                     to_scheme, to_host, to_port, method, path,
                     req_headers, status_code, duration_ms, timings)
-                   VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)""",
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)""",
                 log["id"],
                 datetime.fromisoformat(log["timestamp"]),
                 log["from"]["address"],
