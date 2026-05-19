@@ -4,32 +4,27 @@ import httpx
 import random
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
-from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import PlainTextResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from .config import Directories, Files, Repositories, Hostnames
 from .renderer import render, render_error_page, render_thumbnail_png
-from .database import AccessCounter, init_db, close_pool
+from .database import AccessCounter
 from .middleware import Middleware
 
-@asynccontextmanager
-async def lifespan(app):
-    await init_db()
-    yield
-    await close_pool()
-
-app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
+app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 app.add_middleware(Middleware)
-templates = Jinja2Templates(directory=Directories.public)
-access_counter = AccessCounter()
 
-templates.env.globals["get_access_count"] = access_counter.get
+templates = Jinja2Templates(directory=Directories.public)
+
+templates.env.filters["re_sub"] = lambda s, pattern, repl: re.sub(pattern, repl, s)
 templates.env.globals["server_version"] = Repositories.Server.version
 templates.env.globals["contents_version"] = Repositories.Contents.version
 templates.env.globals["onion_site_url"] = f"http://{Hostnames.onion[0]}/"
-templates.env.filters["re_sub"] = lambda s, pattern, repl: re.sub(pattern, repl, s)
+
+access_counter = AccessCounter()
+templates.env.globals["get_access_count"] = access_counter.get
 
 def this_year() -> int:
     return datetime.now(ZoneInfo("Asia/Tokyo")).year
@@ -82,12 +77,6 @@ async def status():
         },
         status_code=200
     )
-
-@app.api_route("/echo", methods=["GET"])
-async def echo(request: Request):
-    if not request.scope.get("trusted", False):
-        return render_error_page(request=request, templates=templates, status_code=403, message="echoエンドポイントはデバッグ用途のため、信頼されている一部のIP範囲からのみアクセスできます。", joke_message="のっととらすてっど")
-    return JSONResponse(request.scope["log"], status_code=200)
 
 @app.api_route("/assets/css/google-fonts.css", methods=["GET"])
 async def google_fonts_css(request: Request):

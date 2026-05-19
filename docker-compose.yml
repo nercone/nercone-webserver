@@ -5,33 +5,7 @@ services:
     network_mode: host
     restart: unless-stopped
     volumes:
-      - pg_socket:/run/postgresql
       - "./.git:/srv/website/.git:ro"
       - "./databases:/srv/website/databases"
       - "./logs:/srv/website/logs"
       - "./public:/srv/website/public:ro"
-    environment:
-      - DATABASE_URL=postgresql://website:website@/website?host=/run/postgresql
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  postgres:
-    image: postgres:17-alpine
-    container_name: postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: website
-      POSTGRES_PASSWORD: website
-      POSTGRES_DB: website
-    volumes:
-      - pg_socket:/var/run/postgresql
-      - ./databases/postgres:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U website -d website"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  pg_socket:

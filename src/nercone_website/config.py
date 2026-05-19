@@ -1,4 +1,4 @@
-import os
+import time
 import ipaddress
 import subprocess
 from scour import scour
@@ -103,17 +103,38 @@ class AccessSources:
     ]
 
     @staticmethod
-    def is_trusted(ip: str, forwarded_for: str = "") -> bool:
+    def is_trusted(client: str, xff: str = "") -> bool:
         networks = [ipaddress.ip_network(network) for network in AccessSources.trusted_networks]
-        if any(ipaddress.ip_address(ip) in network for network in networks):
-            entries = [e.strip() for e in forwarded_for.split(",")]
-            if not forwarded_for or any(ipaddress.ip_address(entries[0]) in network for network in networks):
+        if any(ipaddress.ip_address(client) in network for network in networks):
+            entries = [e.strip() for e in xff.split(",")]
+            if not xff or any(ipaddress.ip_address(entries[0]) in network for network in networks):
                 return True
         return False
 
-class Options:
-    database_url = os.environ.get("DATABASE_URL", "postgresql://website:website@/website?host=/run/postgresql")
+class TimingManager:
+    def __init__(self):
+        self.timings: dict[str, list[float, float | None]] = {}
 
+    def start(self, key: str) -> float:
+        now = time.perf_counter()
+        self.timings[key] = [now, None]
+        return now
+
+    def stop(self, key: str) -> float:
+        now = time.perf_counter()
+        self.timings[key] = [self.timings[key][0], now]
+        return now
+
+    @property
+    def header(self) -> str:
+        headers = []
+        sorted_timings = sorted(self.timings.items(), key=lambda item: item[1][1] or float("inf"))
+        for key, timing in sorted_timings:
+            duration = round((timing[1] - timing[0]) * 1000, 3)
+            headers.append(f"{key};dur={duration}")
+        return ", ".join(headers)
+
+class Options:
     scour_options = scour.generateDefaultOptions()
     scour_options.newlines = False
     scour_options.shorten_ids = True
