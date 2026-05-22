@@ -97,6 +97,8 @@ def render(path: str, request: Request, templates: Jinja2Templates, access_count
     markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
     markdown_mode = any([path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])])
 
+    context["access_id"] = request.scope["access_id"]
+    context["trusted"] = request.scope["trusted"]
     context["useroptions"] = UserOptions(request)
 
     try:
