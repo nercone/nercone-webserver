@@ -18,8 +18,6 @@ from fastapi.responses import PlainTextResponse, FileResponse, RedirectResponse
 from .config import Directories, Files, ErrorMessages, UserOptions
 from .database import AccessCounter
 
-markitdown = MarkItDown()
-
 class CustomHTMLRenderer(mistune.HTMLRenderer):
     _alert_re = re.compile(r'^\s*<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\n(.*?))?</p>\s*', re.IGNORECASE | re.DOTALL,)
 
@@ -37,6 +35,8 @@ class CustomHTMLRenderer(mistune.HTMLRenderer):
             inner = (f'<p>{inline_content}</p>\n' if inline_content and inline_content.strip() else '') + rest
             return f'<div class="block block-{css_class}">\n<b>{label}</b>\n{inner}</div>\n'
         return f'<blockquote>\n{text}</blockquote>\n'
+
+markitdown = MarkItDown()
 htmlitdown = mistune.create_markdown(renderer=CustomHTMLRenderer(escape=False), plugins=["table", "strikethrough", "task_lists", "footnotes"])
 
 def resolve_file(path: str) -> Path | None:
@@ -196,7 +196,7 @@ thumbnail_font_files = [
     str(thumbnail_font_dir / "InterBIZUD-Bold.ttf")
 ]
 
-def render_thumbnail_svg(path: str, title: str = "Untitled Page", description: str = "No description.", template: str = "normal") -> str:
+def render_thumbnail_svg(path: str = "/", title: str = "Untitled Page", description: str = "No description.", template: str = "normal") -> str:
     if file := resolve_file(f"/assets/images/thumbnail/template/{template}.svg"):
         parts = [p for p in path.strip("/").split("/") if p]
         svg = file.read_text(encoding="utf-8")
@@ -207,7 +207,7 @@ def render_thumbnail_svg(path: str, title: str = "Untitled Page", description: s
     else:
         raise FileNotFoundError()
 
-def render_thumbnail_png(path: str, title: str = "Untitled Page", description: str = "No description.", template: str = "normal") -> bytes:
+def render_thumbnail_png(path: str = "/", title: str = "Untitled Page", description: str = "No description.", template: str = "normal") -> bytes:
     svg = render_thumbnail_svg(path=path, title=title, description=description, template=template)
     png = resvg_py.svg_to_bytes(svg, font_files=thumbnail_font_files, width=1280, height=640)
     return png

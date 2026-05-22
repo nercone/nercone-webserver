@@ -16,15 +16,13 @@ from .middleware import Middleware
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 app.add_middleware(Middleware)
 
-templates = Jinja2Templates(directory=Directories.public)
-
-templates.env.filters["re_sub"] = lambda s, pattern, repl: re.sub(pattern, repl, s)
-templates.env.globals["server_version"] = Repositories.Server.version
-templates.env.globals["contents_version"] = Repositories.Contents.version
-templates.env.globals["onion_site_url"] = f"http://{Hostnames.onion[0]}/"
-
 access_counter = AccessCounter()
-templates.env.globals["get_access_count"] = access_counter.get
+
+templates = Jinja2Templates(directory=Directories.public)
+templates.env.filters["re_sub"] = lambda s, pattern, repl: re.sub(pattern, repl, s)
+templates.env.globals["access_counter"] = access_counter
+templates.env.globals["Repositories"] = Repositories
+templates.env.globals["Hostnames"] = Hostnames
 
 def this_year() -> int:
     return datetime.now(ZoneInfo("Asia/Tokyo")).year

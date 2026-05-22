@@ -159,7 +159,18 @@ https://github.com/nercone-dev/website-contents.git
 │   │   │   └── ...
 │   │   ├── other
 │   │   │   └── ...
-│   │   └── ...
+│   │   ├── banner.ai
+│   │   ├── banner.svg
+│   │   ├── banner.png
+│   │   ├── banner.webp
+│   │   ├── favicon.ai
+│   │   ├── favicon.svg
+│   │   ├── favicon.png
+│   │   ├── favicon.webp
+│   │   ├── qr-code.ai
+│   │   ├── qr-code.svg
+│   │   ├── qr-code.png
+│   │   └── qr-code.webp
 │   ├── fonts - フォント
 │   │   ├── InterBIZUD-Regular.ttf
 │   │   ├── InterBIZUD-Regular.woff2
