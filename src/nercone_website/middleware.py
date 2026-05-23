@@ -1,28 +1,98 @@
+import time
 import fcntl
 import traceback
+import ipaddress
 import rjsmin
 import rcssmin
 import minify_html
 from scour import scour
 from fourword.lib import FourWord
-from datetime import datetime, timezone
 from fastapi import Response
 from fastapi.responses import PlainTextResponse
-from starlette.requests import Request as StarletteRequest
+from starlette.requests import Request
 from starlette.types import Scope, ASGIApp, Receive, Send
 
-from .config import Repositories, Hostnames, AccessSources, TimingManager, Options, Files
+from .config import Repositories, Hostnames, Files
 from .renderer import render_error_page
 
-def write_error_log(access_id: str, tb: str):
-    timestamp = datetime.now(timezone.utc).isoformat()
-    entry = f"[{timestamp} access_id={access_id}]\n{tb}\n"
-    try:
-        with Files.Logs.error.open("a", encoding="utf-8") as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
-            f.write(entry)
-    except Exception:
-        pass
+class OptionManager:
+    defaults = {
+        "dev.nercone.useroptions.apperance.theme": "dark"
+    }
+
+    def __init__(self, request: Request):
+        self.request = request
+
+    def __contains__(self, key: str):
+        return key in self.request.query_params or key in self.request.cookies
+
+    def __len__(self):
+        return len(self.request.cookies | self.request.query_params)
+
+    def get(self, key: str, default: str | None = None):
+        once = self.request.query_params.get(key + ".once", None)
+        query = self.request.query_params.get(key, None)
+        cookie = self.request.cookies.get(key, None)
+        return once or query or cookie or default or self.defaults.get(key)
+
+    def set(self, response: Response, key: str, value: str):
+        response.set_cookie(key, value, samesite="lax")
+
+    def apply(self, response: Response):
+        queries = self.request.query_params
+        cookies = self.request.cookies
+        for key in queries:
+            if cookies.get(key) != queries.get(key) or self.defaults.get(key) != (queries[key] or cookies[key]) and not key.endswith(".once"):
+                response.set_cookie(key, queries[key], samesite="lax")
+
+class TrustManager:
+    trusted_networks = [ipaddress.ip_network(network) for network in [
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        "127.0.0.0/8",
+        "169.254.0.0/16",
+
+        "::1/128",
+        "fc00::/7",
+        "fe80::/10",
+
+        "100.64.0.0/10"
+    ]]
+
+    def __init__(self, address: ipaddress.IPv4Address | ipaddress.IPv6Address):
+        self.address = address
+
+    @property
+    def is_trusted(self) -> bool:
+        return all([self.is_trusted_address])
+
+    @property
+    def is_trusted_address(self) -> bool:
+        return any([self.address in network for network in self.trusted_networks])
+
+class TimingManager:
+    def __init__(self):
+        self.timings: dict[str, list[float, float | None]] = {}
+
+    def start(self, key: str) -> float:
+        now = time.perf_counter()
+        self.timings[key] = [now, None]
+        return now
+
+    def stop(self, key: str) -> float:
+        now = time.perf_counter()
+        self.timings[key] = [self.timings[key][0], now]
+        return now
+
+    @property
+    def header(self) -> str:
+        headers = []
+        sorted_timings = sorted(self.timings.items(), key=lambda item: item[1][1] or float("inf"))
+        for key, timing in sorted_timings:
+            duration = round((timing[1] - timing[0]) * 1000, 3)
+            headers.append(f"{key};dur={duration}")
+        return ", ".join(headers)
 
 class Middleware:
     def __init__(self, app: ASGIApp):
@@ -30,7 +100,7 @@ class Middleware:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         try:
-            if scope["type"] not in ("http", "websocket"):
+            if scope["type"] not in ["http", "websocket"]:
                 await self.app(scope, receive, send)
                 return
 
@@ -38,16 +108,16 @@ class Middleware:
             timings.start("total")
 
             headers = dict(scope.get("headers", []))
+
+            scope["id"] = FourWord().text
+            scope["trusted"] = TrustManager(ipaddress.ip_address(scope.get("client", ("", 0))[0]))
+            scope["options"] = OptionManager(Request(scope=scope, receive=receive))
+
             hostname = headers.get(b"host", b"").decode().split(":")[0].strip()
-
-            scope["access_id"] = FourWord().text
-            scope["trusted"] = AccessSources.is_trusted(scope.get("client", ("", 0))[0], headers.get(b"x-forwarded-for", b"").decode())
-
-            hostname_parts = hostname.split(".")
-            if hostname_parts[-1] == "localhost":
-                subdomain = ".".join(hostname_parts[:-1])
+            if hostname.split(".")[-1] == "localhost":
+                subdomain = ".".join(hostname.split(".")[:-1])
             else:
-                subdomain = ".".join(hostname_parts[:-2])
+                subdomain = ".".join(hostname.split(".")[:-2])
 
             if not scope["trusted"] and not any([hostname == candidate or hostname.endswith("." + candidate) for candidate in Hostnames.all]):
                 response = PlainTextResponse("許可されていないホスト名でのアクセスです。", status_code=403)
@@ -86,10 +156,15 @@ class Middleware:
                 await self.send(response, scope, cached_receive, send, timings)
 
         except Exception:
-            write_error_log(scope.get("access_id", "unknown"), traceback.format_exc())
+            try:
+                with Files.Logs.error.open("a", encoding="utf-8") as f:
+                    fcntl.flock(f, fcntl.LOCK_EX)
+                    f.write(f"[{scope.get("id", "unknown")}]\n{traceback.format_exc()}\n")
+            except Exception:
+                pass
 
             try:
-                return render_error_page(StarletteRequest(scope=scope, receive=receive), status_code=500)
+                return render_error_page(Request(scope=scope, receive=receive), status_code=500)
             except Exception:
                 return PlainTextResponse("Internal Server Error", status_code=500)
 
@@ -161,7 +236,11 @@ class Middleware:
         elif "image/svg" in content_type:
             timings.start("minify")
             try:
-                response.body = scour.scourString(response.body.decode("utf-8", errors="replace"), Options.scour_options).encode("utf-8")
+                scour_options = scour.generateDefaultOptions()
+                scour_options.newlines = False
+                scour_options.shorten_ids = True
+                scour_options.strip_comments = True
+                response.body = scour.scourString(response.body.decode("utf-8", errors="replace"), scour_options).encode("utf-8")
             except Exception:
                 pass
             timings.stop("minify")

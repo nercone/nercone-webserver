@@ -15,7 +15,7 @@ from starlette.templating import Jinja2Templates
 from fastapi import Request, Response
 from fastapi.responses import PlainTextResponse, FileResponse, RedirectResponse
 
-from .config import Directories, Files, ErrorMessages, UserOptions
+from .config import Directories, Files
 from .database import AccessCounter
 
 class CustomHTMLRenderer(mistune.HTMLRenderer):
@@ -93,13 +93,16 @@ def resolve_shorturl(path: str) -> str | None:
 
     return None
 
-def render(path: str, request: Request, templates: Jinja2Templates, access_counter: AccessCounter | None = None, status_code: int = 200, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
+def render(path: str, request: Request, templates: Jinja2Templates | None = None, access_counter: AccessCounter | None = None, status_code: int = 200, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
+    context["id"] = request.scope["id"]
+    context["trusted"] = request.scope["trusted"]
+    context["options"] = request.scope["options"]
+
     markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
     markdown_mode = any([path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])])
 
-    context["access_id"] = request.scope["access_id"]
-    context["trusted"] = request.scope["trusted"]
-    context["useroptions"] = UserOptions(request)
+    if templates is None:
+        templates = Jinja2Templates(directory=Directories.public)
 
     try:
         if page := resolve_page(path, markdown_mode=markdown_mode):
@@ -169,27 +172,52 @@ def render(path: str, request: Request, templates: Jinja2Templates, access_count
     for key, value in headers.items():
         response.headers[key.lower().strip()] = value
 
-    context["useroptions"].apply(response)
+    context["options"].apply(response)
 
     return response
 
+error_messages = {
+    400: {"normal": "リクエストの構文が正しくないか、パラメータが不正です。", "joke": "日本語でおk"},
+    401: {"normal": "このリソースにアクセスするには認証が必要です。", "joke": "見たいのならログインすることね"},
+    402: {"normal": "このリソースへのアクセスには支払いが必要です。", "joke": "夢が欲しけりゃ金払え！"},
+    403: {"normal": "このリソースへのアクセス権がありません。", "joke": "あんたなんかに見せるもんですか！"},
+    404: {"normal": "リクエストしたページまたはリソースが見つかりません。", "joke": "そんなページ知らないっ！"},
+    405: {"normal": "このリソースではそのHTTPメソッドは許可されていません。", "joke": "そのMethodはNot Allowedだよ"},
+    406: {"normal": "リクエストのAcceptヘッダーと一致するレスポンスを生成できません。", "joke": "すまんがその条件ではお渡しできない。"},
+    407: {"normal": "このリソースにアクセスするにはプロキシの認証が必要です。", "joke": "うちのプロキシ使うんだったらまずログインしな。"},
+    408: {"normal": "リクエストが時間内に完了しませんでした。", "joke": "もう用がないならさっさと帰りなさい。"},
+    409: {"normal": "現在のリソースの状態とリクエストが競合しています。", "joke": "ちょっと待ったそんな話聞いてないぞ"},
+    410: {"normal": "リクエストしたリソースは恒久的に削除されました。", "joke": "もう無いで。"},
+    411: {"normal": "リクエストにはContent-Lengthヘッダーが必要です。", "joke": "サイズを教えろ。話はそれからだ。"},
+    412: {"normal": "リクエストの前提条件がサーバーの状態と一致しません。", "joke": "なにその条件美味しいの"},
+    413: {"normal": "リクエストのボディがサーバーの許容サイズを超えています。", "joke": "そ、そそ、そんなの入りきらないよっ！"},
+    414: {"normal": "リクエストURIがサーバーの処理できる長さを超えています。", "joke": "もちつけ"},
+    415: {"normal": "リクエストのメディア形式はサポートされていません。", "joke": "そんな形式知らない！"},
+    416: {"normal": "リクエストしたレンジはリソースのサイズ内に存在しません。", "joke": "ちっさぁ:heart:"},
+    417: {"normal": "リクエストのExpectヘッダーの要件をサーバーが満たせません。", "joke": "期待させて悪かったわね！"},
+    418: {"normal": "このサーバーはティーポットです。コーヒーを淹れることはできません。", "joke": "ティーポット「私はコーヒーを注ぐためのものではありません！やだっ！」"},
+    421: {"normal": "リクエストが意図しないサーバーに到達しました。", "joke": "またあいつ案内先間違えてるよ...どうしよ..."},
+    426: {"normal": "このリクエストを処理するにはプロトコルのアップグレードが必要です。", "joke": "それに答えるには、まずWebSocketに移動したい。"}
+}
+
 def render_error_page(request: Request, templates: Jinja2Templates | None = None, status_code: int = 500, message: str | None = None, joke_message: str | None = None) -> Response:
-    templates = templates or Jinja2Templates(directory=Directories.public)
-    if Files.error.is_file():
+    if status_code in [502, 503, 504]:
+        return render("error/nginx.html", request=request, templates=templates, status_code=status_code, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
+    elif status_code in range(500, 599):
+        return render("error/server.html", request=request, templates=templates, status_code=status_code, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
+    else:
         return render(
-            str(Files.error.relative_to(Directories.public)),
+            "error/client.html",
             request=request,
             templates=templates,
             status_code=status_code,
             context={
                 "status_code": status_code,
                 "status_code_name": HTTPStatus(status_code).phrase,
-                "message": message or ErrorMessages.normal.get(status_code, "不明なエラーが発生しました。"),
-                "joke_message": joke_message or ErrorMessages.joke.get(status_code, "あんのーん")
+                "message": message or error_messages.get(status_code, {}).get("normal", "不明なエラーが発生しました。"),
+                "joke_message": joke_message or error_messages.get(status_code, {}).get("joke", "あんのーん")
             }
         )
-    else:
-        return PlainTextResponse(message or ErrorMessages.normal.get(status_code, "不明なエラーが発生しました。"), status_code=status_code)
 
 thumbnail_font_dir = Directories.public.joinpath("assets", "fonts")
 thumbnail_font_files = [
