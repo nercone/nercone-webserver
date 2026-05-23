@@ -17,7 +17,7 @@ from .renderer import render_error_page
 
 class OptionManager:
     defaults = {
-        "dev.nercone.useroptions.apperance.theme": "dark"
+        "dev.nercone.options.apperance.theme": "dark"
     }
 
     def __init__(self, request: Request):
