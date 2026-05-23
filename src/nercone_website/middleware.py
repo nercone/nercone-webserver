@@ -197,7 +197,7 @@ class Middleware:
         set_header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=()", override=False)
         set_header("Content-Security-Policy", " ".join([line.strip() for line in content_security_policy.strip().split("\n")]), override=False)
 
-        if any([content_type.startswith(t) for t in ["text/css", "text/javascript", "application/javascript"]]):
+        if any([content_type.startswith(t) for t in ["text/javascript", "application/javascript"]]):
             set_header("Cache-Control", "public, max-age=21600", override=False)
         elif any([content_type.startswith(t) for t in ["image/", "video/"]]):
             set_header("Cache-Control", "public, max-age=604800", override=False)
