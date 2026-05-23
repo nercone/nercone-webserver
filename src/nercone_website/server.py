@@ -114,10 +114,12 @@ async def thumbnail(request: Request, template: str) -> Response:
 async def fake_error_page(request: Request, status_code: str):
     if status_code.isnumeric():
         return render_error_page(request=request, templates=templates, status_code=int(status_code))
+    elif status_code == "server":
+        return render_error_page(request=request, templates=templates, status_code=500)
     elif status_code == "nginx":
         return render_error_page(request=request, templates=templates, status_code=502)
     else:
-        return render_error_page(request=request, templates=templates, status_code=400, message="errorエンドポイントのパスには「nginx」またはHTTPレスポンスステータスコードのみが使用可能です。", joke_message="HTTP/1.1 600 Not Normal")
+        return render_error_page(request=request, templates=templates, status_code=400, message="errorエンドポイントのパスには「server」「nginx」またはHTTPレスポンスステータスコードのみが使用可能です。", joke_message="HTTP/1.1 600 Not Normal")
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "HEAD"])
 async def default_response(request: Request, path: str) -> Response:
