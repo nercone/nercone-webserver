@@ -47,17 +47,18 @@ class OptionManager:
 
 class TrustManager:
     trusted_networks = [ipaddress.ip_network(network) for network in [
-        "10.0.0.0/8",
-        "172.16.0.0/12",
-        "192.168.0.0/16",
         "127.0.0.0/8",
         "169.254.0.0/16",
 
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+
+        "100.64.0.0/10",
+
         "::1/128",
         "fc00::/7",
-        "fe80::/10",
-
-        "100.64.0.0/10"
+        "fe80::/10"
     ]]
 
     def __init__(self, address: ipaddress.IPv4Address | ipaddress.IPv6Address):
@@ -159,7 +160,7 @@ class Middleware:
             try:
                 with Files.Logs.error.open("a", encoding="utf-8") as f:
                     fcntl.flock(f, fcntl.LOCK_EX)
-                    f.write(f"[{scope.get("id", "unknown")}]\n{traceback.format_exc()}\n")
+                    f.write(f"[{scope.get("id", "ID_NOTSET")}]\n{traceback.format_exc()}\n")
             except Exception:
                 pass
 
