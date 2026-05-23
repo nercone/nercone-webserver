@@ -221,9 +221,14 @@ def render_error_page(request: Request, templates: Jinja2Templates | None = None
 
 thumbnail_font_dir = Directories.public.joinpath("assets", "fonts")
 thumbnail_font_files = [
-    str(thumbnail_font_dir / "MesloBIZUD-Regular.ttf"),
-    str(thumbnail_font_dir / "InterBIZUD-Regular.ttf"),
-    str(thumbnail_font_dir / "InterBIZUD-Bold.ttf")
+    str(thumbnail_font_dir / "NerconeSansJP-Regular.ttf"),
+    str(thumbnail_font_dir / "NerconeSansJP-Italic.ttf"),
+    str(thumbnail_font_dir / "NerconeSansJP-Bold.ttf"),
+    str(thumbnail_font_dir / "NerconeSansJP-BoldItalic.ttf"),
+    str(thumbnail_font_dir / "NerconeMonoJP-Regular.ttf"),
+    str(thumbnail_font_dir / "NerconeMonoJP-Italic.ttf"),
+    str(thumbnail_font_dir / "NerconeMonoJP-Bold.ttf"),
+    str(thumbnail_font_dir / "NerconeMonoJP-BoldItalic.ttf")
 ]
 
 def render_thumbnail_svg(path: str = "/", title: str = "Untitled Page", description: str = "No description.", template: str = "normal") -> str:
