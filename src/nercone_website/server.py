@@ -1,6 +1,4 @@
 import re
-import json
-import httpx
 import random
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -75,26 +73,6 @@ async def status():
         },
         status_code=200
     )
-
-@app.api_route("/assets/css/google-fonts.css", methods=["GET"])
-async def google_fonts_css(request: Request):
-    now = datetime.now(timezone.utc).timestamp()
-    if Files.Cache.google_fonts.is_file():
-        try:
-            cached = json.loads(Files.Cache.google_fonts.read_text(encoding="utf-8"))
-            if cached.get("expires_at", 0) > now:
-                return PlainTextResponse(cached["content"], status_code=200, media_type="text/css")
-        except Exception:
-            pass
-
-    async with httpx.AsyncClient() as client:
-        css = await client.get("https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&family=Noto+Sans+SC:wght@100..900&family=Noto+Sans+TC:wght@100..900&family=Noto+Sans+KR:wght@100..900&display=swap")
-
-    if css.status_code == 200:
-        Files.Cache.google_fonts.write_text(json.dumps({"content": css.text, "expires_at": now + 86400}, ensure_ascii=False), encoding="utf-8")
-        return PlainTextResponse(css.text, status_code=200, media_type="text/css")
-    else:
-        return render_error_page(request=request, templates=templates, status_code=502)
 
 @app.api_route("/assets/images/thumbnail/template/{template}", methods=["GET"])
 async def thumbnail(request: Request, template: str) -> Response:

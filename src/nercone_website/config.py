@@ -15,9 +15,6 @@ class Files:
     class Logs:
         error = Directories.logs.joinpath("error.log")
 
-    class Cache:
-        google_fonts = Directories.databases.joinpath("google_fonts.json")
-
 class Repositories:
     class Server:
         url = subprocess.run(["/usr/bin/git", "remote", "get-url", "origin"], text=True, capture_output=True, cwd=Directories.base).stdout.strip()
