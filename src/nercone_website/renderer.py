@@ -158,7 +158,11 @@ def render(path: str, request: Request, templates: Jinja2Templates | None = None
                 access_counter.increase()
 
         elif file := resolve_file(path):
-            response = FileResponse(file, status_code=status_code)
+            etag = '"' + hashlib.sha256(file.read_bytes()).hexdigest() + '"'
+            if request.headers.get("if-none-match") == etag:
+                response = Response(status_code=304, headers={"ETag": etag})
+            else:
+                response = FileResponse(file, status_code=status_code, headers={"ETag": etag})
 
         elif url := resolve_shorturl(path):
             response = RedirectResponse(url, status_code=status_code if 299 < status_code < 400 else 307)
