@@ -1,44 +1,13 @@
-import re
-import random
-from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import PlainTextResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 
-from .config import Directories, Files, Repositories, Hostnames
+from .config import Repositories
 from .renderer import render, render_error_page, render_thumbnail_png
-from .database import AccessCounter
 from .middleware import Middleware
+from .templates import get_daily_quote, access_counter
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 app.add_middleware(Middleware)
-
-access_counter = AccessCounter()
-
-templates = Jinja2Templates(directory=Directories.public)
-templates.env.filters["re_sub"] = lambda s, pattern, repl: re.sub(pattern, repl, s)
-templates.env.globals["access_counter"] = access_counter
-templates.env.globals["Repositories"] = Repositories
-templates.env.globals["Hostnames"] = Hostnames
-
-def this_year() -> int:
-    return datetime.now(ZoneInfo("Asia/Tokyo")).year
-templates.env.globals["this_year"] = this_year
-
-def this_year_in_heisei() -> int: # heysay is not ended.
-    return datetime.now(ZoneInfo("Asia/Tokyo")).year - 1988
-templates.env.globals["this_year_in_heisei"] = this_year_in_heisei
-
-def get_daily_quote() -> str:
-    if Files.quotes.is_file():
-        seed = str(datetime.now(timezone.utc).date())
-        with Files.quotes.open("r") as f:
-            quotes = f.read().strip().split("\n")
-        return random.Random(seed).choice(quotes)
-    else:
-        return "GReeeeN KA-RA-DA"
-templates.env.globals["get_daily_quote"] = get_daily_quote
 
 @app.api_route("/ping", methods=["GET"])
 async def ping():
@@ -84,21 +53,21 @@ async def thumbnail(request: Request, template: str) -> Response:
         png = render_thumbnail_png(path=path, title=title, description=description, template=template)
         return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-cache"})
     except FileNotFoundError:
-        return render_error_page(request=request, templates=templates, status_code=500, message="サムネイルの生成に必要なテンプレートが見つかりません。", joke_message="はにゃ？")
+        return render_error_page(request=request, status_code=500, message="サムネイルの生成に必要なテンプレートが見つかりません。", joke_message="はにゃ？")
     except PermissionError:
-        return render_error_page(request=request, templates=templates, status_code=403, message="ねえ、今サムネイル生成のエンドポイント悪用して攻撃しようとした？したよね？？ディレクトリトラバーサルでしょ？知ってるよ？怒ってないから正直に言って？ね？ね？？", joke_message="嘘つきには針千本プレゼント！このメッセージを読んだ後、100年以内限定！飲用補助サービスが無料でついてきます！今すぐ正直に言え！！")
+        return render_error_page(request=request, status_code=403, message="ねえ、今サムネイル生成のエンドポイント悪用して攻撃しようとした？したよね？？ディレクトリトラバーサルでしょ？知ってるよ？怒ってないから正直に言って？ね？ね？？", joke_message="嘘つきには針千本プレゼント！このメッセージを読んだ後、100年以内限定！飲用補助サービスが無料でついてきます！今すぐ正直に言え！！")
 
 @app.api_route("/error/{status_code}", methods=["GET"])
 async def fake_error_page(request: Request, status_code: str):
     if status_code.isnumeric():
-        return render_error_page(request=request, templates=templates, status_code=int(status_code))
+        return render_error_page(request=request, status_code=int(status_code))
     elif status_code == "server":
-        return render_error_page(request=request, templates=templates, status_code=500)
+        return render_error_page(request=request, status_code=500)
     elif status_code == "nginx":
-        return render_error_page(request=request, templates=templates, status_code=502)
+        return render_error_page(request=request, status_code=502)
     else:
-        return render_error_page(request=request, templates=templates, status_code=400, message="errorエンドポイントのパスには「server」「nginx」またはHTTPレスポンスステータスコードのみが使用可能です。", joke_message="HTTP/1.1 600 Not Normal")
+        return render_error_page(request=request, status_code=400, message="errorエンドポイントのパスには「server」「nginx」またはHTTPレスポンスステータスコードのみが使用可能です。", joke_message="HTTP/1.1 600 Not Normal")
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "HEAD"])
 async def default_response(request: Request, path: str) -> Response:
-    return render(path, request=request, templates=templates, access_counter=access_counter)
+    return render(path, request=request)

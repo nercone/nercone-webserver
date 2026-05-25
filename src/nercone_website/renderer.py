@@ -11,12 +11,11 @@ from pathlib import Path
 from http import HTTPStatus
 from bs4 import BeautifulSoup
 from markitdown import MarkItDown
-from starlette.templating import Jinja2Templates
 from fastapi import Request, Response
 from fastapi.responses import PlainTextResponse, FileResponse, RedirectResponse
 
 from .config import Directories, Files
-from .database import AccessCounter
+from .templates import templates, access_counter
 
 class CustomHTMLRenderer(mistune.HTMLRenderer):
     _alert_re = re.compile(r'^\s*<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\n(.*?))?</p>\s*', re.IGNORECASE | re.DOTALL,)
@@ -93,7 +92,7 @@ def resolve_shorturl(path: str) -> str | None:
 
     return None
 
-def render(path: str, request: Request, templates: Jinja2Templates | None = None, access_counter: AccessCounter | None = None, status_code: int = 200, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
+def render(path: str, request: Request, status_code: int = 200, count: bool = False, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
     context["id"] = request.scope["id"]
     context["trusted"] = request.scope["trusted"]
     context["options"] = request.scope["options"]
@@ -101,52 +100,44 @@ def render(path: str, request: Request, templates: Jinja2Templates | None = None
     markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
     markdown_mode = any([path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])])
 
-    if templates is None:
-        templates = Jinja2Templates(directory=Directories.public)
-
     try:
         if page := resolve_page(path, markdown_mode=markdown_mode):
+            with Directories.public.joinpath(page).open("r") as f:
+                source = f.read()
+
+            if not source.startswith("---"):
+                front = {}
+                body = source
+            else:
+                end = source.find("\n---", 3)
+                if end == -1:
+                    front = {}
+                    body = source
+                else:
+                    front = yaml.safe_load(source[3:end]) or {}
+                    body = source[end+4:].lstrip("\n")
+
             if page.endswith(".html"):
-                if markdown_mode:
-                    content = templates.env.get_template(page).render(request=request, **context)
-                    soup = BeautifulSoup(content, "html.parser")
-                    main = str(soup.find("main")) if soup.find("main") else content
-                    content = markitdown.convert_stream(io.BytesIO(main.encode("utf-8")), file_extension=".html").text_content
-                    response = PlainTextResponse(content, status_code=status_code, media_type="text/markdown")
-                else:
-                    content = templates.env.get_template(page).render(request=request, **context)
-                    response = PlainTextResponse(content, status_code=status_code, media_type="text/html")
-
+                html = templates.env.from_string(body).render(request=request, **context)
             elif page.endswith(".md"):
-                with Directories.public.joinpath(page).open("r") as f:
-                    markdown = f.read()
+                html = htmlitdown(templates.env.from_string(body).render(request=request, **context))
 
-                if markdown_mode:
-                    content = templates.env.from_string(markdown).render(request=request, **context)
-                    response = PlainTextResponse(content, status_code=status_code, media_type="text/markdown")
+            if "base" in front:
+                source = f"{{% extends \"{front['base']}\" %}}\n"
+            else:
+                source = "{% extends \"/base.html\" %}\n"
+            for key, value in front.items():
+                source += f"{{% block {key} %}}{value}{{% endblock %}}\n"
+            source += f"{{% block main %}}\n{html}\n{{% endblock %}}\n"
 
-                else:
-                    if not markdown.startswith("---"):
-                        front = {}
-                        body = markdown
-                    else:
-                        end = markdown.find("\n---", 3)
-                        if end == -1:
-                            front = {}
-                            body = markdown
-                        else:
-                            front = yaml.safe_load(markdown[3:end]) or {}
-                            body = markdown[end+4:].lstrip("\n")
+            content = templates.env.from_string(source).render(request=request, **context)
+            response = PlainTextResponse(content, status_code=status_code, media_type="text/html")
 
-                    body_rendered = templates.env.from_string(body).render(request=request, **context)
-                    html = htmlitdown(body_rendered)
-                    source = "{% extends \"/base.html\" %}\n"
-                    for block in front:
-                        source += f"{{% block {block} %}}{front[block]}{{% endblock %}}\n"
-                    source += f"{{% block main %}}\n{html}\n{{% endblock %}}\n"
-
-                    content = templates.env.from_string(source).render(request=request, **context)
-                    response = Response(content=content, status_code=status_code, media_type="text/html")
+            if markdown_mode:
+                soup = BeautifulSoup(content, "html.parser")
+                main = str(soup.find("main")) if soup.find("main") else content
+                content = markitdown.convert_stream(io.BytesIO(main.encode("utf-8")), file_extension=".html").text_content
+                response = PlainTextResponse(content, status_code=status_code, media_type="text/markdown")
 
             etag = '"' + hashlib.sha256(content.encode("utf-8")).hexdigest() + '"'
             if request.headers.get("if-none-match") == etag:
@@ -154,7 +145,7 @@ def render(path: str, request: Request, templates: Jinja2Templates | None = None
             else:
                 response.headers["ETag"] = etag
 
-            if access_counter:
+            if count:
                 access_counter.increase()
 
         elif file := resolve_file(path):
@@ -168,10 +159,10 @@ def render(path: str, request: Request, templates: Jinja2Templates | None = None
             response = RedirectResponse(url, status_code=status_code if 299 < status_code < 400 else 307)
 
         else:
-            response = render_error_page(request, templates, 404, "リクエストしたページは現在ご利用になれません。削除/移動されたか、URLが間違っている可能性があります。", "そんなページ知らないっ！")
+            response = render_error_page(request, 404, "リクエストしたページは現在ご利用になれません。削除/移動されたか、URLが間違っている可能性があります。", "そんなページ知らないっ！")
 
     except PermissionError:
-        response = render_error_page(request, templates, 403, "何をしてるんです？脆弱性報告のためならいいのですが、データ盗んで悪用するためなら今すぐにやめてくださいね？", "ディレクトリトラバーサルね、知ってる。公開してないところ覗きたいの？えっt")
+        response = render_error_page(request, 403, "何をしてるんです？脆弱性報告のためならいいのですが、データ盗んで悪用するためなら今すぐにやめてくださいね？", "ディレクトリトラバーサルね、知ってる。公開してないところ覗きたいの？えっt")
 
     for key, value in headers.items():
         response.headers[key.lower().strip()] = value
@@ -204,17 +195,17 @@ error_messages = {
     426: {"normal": "このリクエストを処理するにはプロトコルのアップグレードが必要です。", "joke": "それに答えるには、まずWebSocketに移動したい。"}
 }
 
-def render_error_page(request: Request, templates: Jinja2Templates | None = None, status_code: int = 500, message: str | None = None, joke_message: str | None = None) -> Response:
+def render_error_page(request: Request, status_code: int = 500, message: str | None = None, joke_message: str | None = None) -> Response:
     if status_code in [502, 503, 504]:
-        return render("error/nginx.html", request=request, templates=templates, status_code=status_code, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
+        return render("error/nginx.html", request=request, status_code=status_code, count=False, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
     elif status_code in range(500, 599):
-        return render("error/server.html", request=request, templates=templates, status_code=status_code, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
+        return render("error/server.html", request=request, status_code=status_code, count=False, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
     else:
         return render(
             "error/client.html",
             request=request,
-            templates=templates,
             status_code=status_code,
+            count=False,
             context={
                 "status_code": status_code,
                 "status_code_name": HTTPStatus(status_code).phrase,
