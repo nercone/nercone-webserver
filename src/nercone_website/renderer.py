@@ -92,7 +92,7 @@ def resolve_shorturl(path: str) -> str | None:
 
     return None
 
-def render(path: str, request: Request, status_code: int = 200, count: bool = False, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
+def render(path: str, request: Request, status_code: int = 200, count: bool = True, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
     context["id"] = request.scope["id"]
     context["trusted"] = request.scope["trusted"]
     context["options"] = request.scope["options"]
