@@ -117,9 +117,9 @@ class PPManager:
 
     def append(self, key: str, *values: str):
         if key not in self.directives:
-            self.directives[key] = list[values]
+            self.directives[key] = list(values)
         else:
-            self.directives[key] += list[values]
+            self.directives[key] += list(values)
 
     def remove(self, key: str):
         self.directives.pop(key, None)
@@ -159,9 +159,9 @@ class CSPManager:
 
     def append(self, key: str, *values: str):
         if key not in self.directives:
-            self.directives[key] = list[values]
+            self.directives[key] = list(values)
         else:
-            self.directives[key] += list[values]
+            self.directives[key] += list(values)
 
     def remove(self, key: str):
         self.directives.pop(key, None)
