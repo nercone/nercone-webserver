@@ -197,13 +197,19 @@ error_messages = {
 
 def render_error_page(request: Request, status_code: int = 500, message: str | None = None, joke_message: str | None = None) -> Response:
     if status_code in [502, 503, 504]:
-        request.scope["csp"].append("script-src", "'unsafe-inline'")
-        request.scope["csp"].append("style-src", "'unsafe-inline'")
-        return render("error/nginx", request=request, status_code=status_code, count=False)
+        if page := resolve_page("error/nginx"):
+            with Directories.public.joinpath(page).open("r") as f:
+                content = f.read()
+            request.scope["csp"].append("script-src", "'unsafe-inline'")
+            request.scope["csp"].append("style-src", "'unsafe-inline'")
+            return PlainTextResponse(content, status_code=status_code, media_type="text/html")
     elif status_code in range(500, 599):
-        request.scope["csp"].append("script-src", "'unsafe-inline'")
-        request.scope["csp"].append("style-src", "'unsafe-inline'")
-        return render("error/server", request=request, status_code=status_code, count=False)
+        if page := resolve_page("error/server"):
+            with Directories.public.joinpath(page).open("r") as f:
+                content = f.read()
+            request.scope["csp"].append("script-src", "'unsafe-inline'")
+            request.scope["csp"].append("style-src", "'unsafe-inline'")
+            return PlainTextResponse(content, status_code=status_code, media_type="text/html")
     else:
         return render(
             "error/client",
