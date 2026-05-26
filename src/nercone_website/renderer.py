@@ -197,9 +197,13 @@ error_messages = {
 
 def render_error_page(request: Request, status_code: int = 500, message: str | None = None, joke_message: str | None = None) -> Response:
     if status_code in [502, 503, 504]:
-        return render("error/nginx", request=request, status_code=status_code, count=False, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
+        request.scope["csp"].append("script-src", "'unsafe-inline'")
+        request.scope["csp"].append("style-src", "'unsafe-inline'")
+        return render("error/nginx", request=request, status_code=status_code, count=False)
     elif status_code in range(500, 599):
-        return render("error/server", request=request, status_code=status_code, count=False, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
+        request.scope["csp"].append("script-src", "'unsafe-inline'")
+        request.scope["csp"].append("style-src", "'unsafe-inline'")
+        return render("error/server", request=request, status_code=status_code, count=False)
     else:
         return render(
             "error/client",

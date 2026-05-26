@@ -95,6 +95,87 @@ class TimingManager:
             headers.append(f"{key};dur={duration}")
         return ", ".join(headers)
 
+class PPManager:
+    defaults = {
+        "camera": [],
+        "microphone": [],
+        "geolocation": [],
+        "payment": [],
+        "usb": [],
+        "accelerometer": [],
+        "gyroscope": [],
+        "magnetometer": [],
+        "display-capture": []
+    }
+
+    def __init__(self):
+        self.directives: dict[str, list[str]] = dict(self.defaults)
+
+    def set(self, key: str, value: list[str], override: bool = True):
+        if override or key not in self.directives:
+            self.directives[key] = value
+
+    def append(self, key: str, value: str):
+        if key not in self.directives:
+            self.directives[key] = [value]
+        else:
+            self.directives[key] += [value]
+
+    def remove(self, key: str):
+        self.directives.pop(key, None)
+
+    @property
+    def header(self) -> str:
+        parts = []
+        for key, value in self.directives.items():
+            if value == ["*"]:
+                parts.append(f"{key}=*")
+            elif value:
+                parts.append(f"{key}=({' '.join(value)})")
+            else:
+                parts.append(f"{key}=()")
+        return ", ".join(parts)
+
+class CSPManager:
+    defaults = {
+        "default-src": ["'self'", "assets.nercone.dev"],
+        "script-src": ["'self'", "assets.nercone.dev"],
+        "style-src": ["'self'", "assets.nercone.dev"],
+        "font-src": ["'self'", "assets.nercone.dev"],
+        "img-src": ["'self'", "assets.nercone.dev", "t3tra.dev", "drsb.f5.si", "data:"],
+        "connect-src": ["'self'"],
+        "frame-ancestors": ["'self'"],
+        "base-uri": ["'self'"],
+        "form-action": ["'self'"],
+        "upgrade-insecure-requests": True
+    }
+
+    def __init__(self):
+        self.directives: dict[str, list[str] | bool] = dict(self.defaults)
+
+    def set(self, key: str, value: list[str] | bool, override: bool = True):
+        if override or key not in self.directives:
+            self.directives[key] = value
+
+    def append(self, key: str, value: str):
+        if key not in self.directives:
+            self.directives[key] = [value]
+        else:
+            self.directives[key] += [value]
+
+    def remove(self, key: str):
+        self.directives.pop(key, None)
+
+    @property
+    def header(self) -> str:
+        parts = []
+        for key, value in self.directives.items():
+            if isinstance(value, bool) and value:
+                parts.append(key)
+            else:
+                parts.append(f"{key} {' '.join(value)}")
+        return "; ".join(parts).strip()
+
 class Middleware:
     def __init__(self, app: ASGIApp):
         self.app = app
@@ -113,6 +194,9 @@ class Middleware:
             scope["id"] = FourWord()
             scope["trusted"] = TrustManager(ipaddress.ip_address(scope.get("client", ("", 0))[0]))
             scope["options"] = OptionManager(Request(scope=scope, receive=receive))
+
+            scope["pp"] = PPManager()
+            scope["csp"] = CSPManager()
 
             hostname = headers.get(b"host", b"").decode().split(":")[0].strip()
             if hostname.split(".")[-1] == "localhost":
@@ -254,6 +338,8 @@ class Middleware:
 
         set_header("Content-Length", str(len(response.body)))
 
+        set_header("X-Request-Id", scope["id"].text)
+
         set_header("Server", f"nercone.dev ({Repositories.Server.version}+{Repositories.Contents.version})")
         set_header("Onion-Location", f"http://{Hostnames.onion[0]}{scope.get("path", "/")}" + (f"?{scope.get("query_string", b"").decode()}" if scope.get("query_string", b"").decode() else ""))
         set_header("Link", "<https://nercone.dev/sitemap.xml>; rel=\"sitemap\", <https://nercone.dev/robots.txt>; rel=\"robots\"")
@@ -264,22 +350,9 @@ class Middleware:
         set_header("Access-Control-Allow-Methods", "*", override=False)
         set_header("Access-Control-Allow-Headers", "*", override=False)
 
-        content_security_policy = """
-        default-src 'self' assets.nercone.dev;
-        script-src 'self' assets.nercone.dev;
-        style-src 'self' assets.nercone.dev;
-        font-src 'self' assets.nercone.dev fonts.gstatic.com;
-        img-src 'self' assets.nercone.dev t3tra.dev drsb.f5.si data:;
-        connect-src 'self';
-        frame-ancestors 'self';
-        base-uri 'self';
-        form-action 'self';
-        upgrade-insecure-requests;
-        """
-
         set_header("Referrer-Policy", "strict-origin-when-cross-origin")
-        set_header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), display-capture=()", override=False)
-        set_header("Content-Security-Policy", " ".join([line.strip() for line in content_security_policy.strip().split("\n")]), override=False)
+        set_header("Permissions-Policy", scope["pp"].header)
+        set_header("Content-Security-Policy", scope["csp"].header)
 
         timings.stop("total")
         set_header("Server-Timing", timings.header)
