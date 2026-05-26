@@ -110,7 +110,7 @@ class Middleware:
 
             headers = dict(scope.get("headers", []))
 
-            scope["id"] = FourWord().text
+            scope["id"] = FourWord()
             scope["trusted"] = TrustManager(ipaddress.ip_address(scope.get("client", ("", 0))[0]))
             scope["options"] = OptionManager(Request(scope=scope, receive=receive))
 
@@ -158,13 +158,15 @@ class Middleware:
 
         except Exception:
             try:
+                try:
+                    id_text = scope["id"].text
+                except Exception:
+                    id_text = "NOTSET"
+
                 with Files.Logs.error.open("a", encoding="utf-8") as f:
                     fcntl.flock(f, fcntl.LOCK_EX)
-                    f.write(f"[{scope.get("id", "ID_NOTSET")}]\n{traceback.format_exc()}\n")
-            except Exception:
-                pass
+                    f.write(f"[{id_text}]\n{traceback.format_exc()}\n")
 
-            try:
                 return render_error_page(Request(scope=scope, receive=receive), status_code=500)
             except Exception:
                 return PlainTextResponse("Internal Server Error", status_code=500)
