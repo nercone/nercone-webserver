@@ -205,11 +205,13 @@ error_messages = {
 def render_error_page(request: Request, status_code: int = 500, message: str | None = None, joke_message: str | None = None) -> Response:
     if status_code in [502, 503, 504]:
         request.scope["csp"].append("script-src", "'unsafe-inline'")
-        request.scope["csp"].append("style-src", "'unsafe-inline'")
+        request.scope["csp"].append("style-src", "fonts.googleapis.com", "'unsafe-inline'")
+        request.scope["csp"].append("font-src", "fonts.gstatic.com")
         return default_response("error/nginx", request=request, status_code=status_code, count=False, render=False)
     elif status_code in range(500, 599):
         request.scope["csp"].append("script-src", "'unsafe-inline'")
-        request.scope["csp"].append("style-src", "'unsafe-inline'")
+        request.scope["csp"].append("style-src", "fonts.googleapis.com", "'unsafe-inline'")
+        request.scope["csp"].append("font-src", "fonts.gstatic.com")
         return default_response("error/server", request=request, status_code=status_code, count=False, render=False)
     else:
         return default_response(
