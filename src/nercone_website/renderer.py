@@ -202,7 +202,7 @@ def render_error_page(request: Request, status_code: int = 500, message: str | N
         return render("error/server.html", request=request, status_code=status_code, count=False, headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'; style-src 'self' fonts.googleapis.com 'unsafe-inline'; font-src 'self' fonts.gstatic.com; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"})
     else:
         return render(
-            "error/client.html",
+            "error/client.md",
             request=request,
             status_code=status_code,
             count=False,
