@@ -9,7 +9,7 @@ from scour import scour
 from fourword.lib import FourWord
 from fastapi import Response
 from fastapi.responses import PlainTextResponse
-from starlette.requests import Request
+from starlette.requests import Request, HTTPConnection
 from starlette.types import Scope, ASGIApp, Receive, Send
 
 from .config import Repositories, Hostnames, Files
@@ -20,7 +20,7 @@ class OptionManager:
         "dev.nercone.options.apperance.theme": "dark"
     }
 
-    def __init__(self, request: Request):
+    def __init__(self, request: HTTPConnection):
         self.request = request
 
     def __contains__(self, key: str):
@@ -193,7 +193,7 @@ class Middleware:
 
             scope["id"] = FourWord()
             scope["trusted"] = TrustManager(ipaddress.ip_address(scope.get("client", ("", 0))[0]))
-            scope["options"] = OptionManager(Request(scope=scope, receive=receive))
+            scope["options"] = OptionManager(HTTPConnection(scope=scope))
 
             scope["pp"] = PPManager()
             scope["csp"] = CSPManager()
