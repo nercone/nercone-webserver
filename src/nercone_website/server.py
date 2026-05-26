@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import PlainTextResponse, JSONResponse
 
 from .config import Repositories
-from .renderer import render, render_error_page, render_thumbnail_png
+from .renderer import default_response, render_error_page, render_thumbnail_png
 from .middleware import Middleware
 from .templates import get_daily_quote, access_counter
 
@@ -69,5 +69,5 @@ async def fake_error_page(request: Request, status_code: str):
         return render_error_page(request=request, status_code=400, message="errorエンドポイントのパスには「server」「nginx」またはHTTPレスポンスステータスコードのみが使用可能です。", joke_message="HTTP/1.1 600 Not Normal")
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "HEAD"])
-async def default_response(request: Request, path: str) -> Response:
-    return render(path, request=request)
+async def default_route(request: Request, path: str) -> Response:
+    return default_response(path, request=request)

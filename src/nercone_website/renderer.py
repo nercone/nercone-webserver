@@ -92,7 +92,7 @@ def resolve_shorturl(path: str) -> str | None:
 
     return None
 
-def render(path: str, request: Request, status_code: int = 200, count: bool = True, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
+def default_response(path: str, request: Request, status_code: int = 200, count: bool = True, render: bool = True, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
     context["id"] = request.scope["id"]
     context["trusted"] = request.scope["trusted"]
     context["options"] = request.scope["options"]
@@ -105,39 +105,46 @@ def render(path: str, request: Request, status_code: int = 200, count: bool = Tr
             with Directories.public.joinpath(page).open("r") as f:
                 source = f.read()
 
-            if not source.startswith("---"):
-                front = {}
-                body = source
-            else:
-                end = source.find("\n---", 3)
-                if end == -1:
+            if render:
+                if not source.startswith("---"):
                     front = {}
                     body = source
                 else:
-                    front = yaml.safe_load(source[3:end]) or {}
-                    body = source[end+4:].lstrip("\n")
+                    end = source.find("\n---", 3)
+                    if end == -1:
+                        front = {}
+                        body = source
+                    else:
+                        front = yaml.safe_load(source[3:end]) or {}
+                        body = source[end+4:].lstrip("\n")
 
-            if page.endswith(".html"):
-                html = templates.env.from_string(body).render(request=request, **context)
-            elif page.endswith(".md"):
-                html = htmlitdown(templates.env.from_string(body).render(request=request, **context))
+                if page.endswith(".html"):
+                    html = templates.env.from_string(body).render(request=request, **context)
+                elif page.endswith(".md"):
+                    html = htmlitdown(templates.env.from_string(body).render(request=request, **context))
 
-            if "base" in front:
-                source = f"{{% extends \"{front['base']}\" %}}\n"
+                if "base" in front:
+                    source = f"{{% extends \"{front['base']}\" %}}\n"
+                else:
+                    source = "{% extends \"/base.html\" %}\n"
+                for key, value in front.items():
+                    source += f"{{% block {key} %}}{value}{{% endblock %}}\n"
+                source += f"{{% block main %}}\n{html}\n{{% endblock %}}\n"
+
+                content = templates.env.from_string(source).render(request=request, **context)
+                response = PlainTextResponse(content, status_code=status_code, media_type="text/html")
+
+                if markdown_mode:
+                    soup = BeautifulSoup(content, "html.parser")
+                    main = str(soup.find("main")) if soup.find("main") else content
+                    content = markitdown.convert_stream(io.BytesIO(main.encode("utf-8")), file_extension=".html").text_content
+                    response = PlainTextResponse(content, status_code=status_code, media_type="text/markdown")
             else:
-                source = "{% extends \"/base.html\" %}\n"
-            for key, value in front.items():
-                source += f"{{% block {key} %}}{value}{{% endblock %}}\n"
-            source += f"{{% block main %}}\n{html}\n{{% endblock %}}\n"
-
-            content = templates.env.from_string(source).render(request=request, **context)
-            response = PlainTextResponse(content, status_code=status_code, media_type="text/html")
-
-            if markdown_mode:
-                soup = BeautifulSoup(content, "html.parser")
-                main = str(soup.find("main")) if soup.find("main") else content
-                content = markitdown.convert_stream(io.BytesIO(main.encode("utf-8")), file_extension=".html").text_content
-                response = PlainTextResponse(content, status_code=status_code, media_type="text/markdown")
+                content = source
+                if page.endswith(".html"):
+                    response = PlainTextResponse(content, status_code=status_code, media_type="text/html")
+                elif page.endswith(".md"):
+                    response = PlainTextResponse(content, status_code=status_code, media_type="text/markdown")
 
             etag = '"' + hashlib.sha256(content.encode("utf-8")).hexdigest() + '"'
             if request.headers.get("if-none-match") == etag:
@@ -197,21 +204,15 @@ error_messages = {
 
 def render_error_page(request: Request, status_code: int = 500, message: str | None = None, joke_message: str | None = None) -> Response:
     if status_code in [502, 503, 504]:
-        if page := resolve_page("error/nginx"):
-            with Directories.public.joinpath(page).open("r") as f:
-                content = f.read()
-            request.scope["csp"].append("script-src", "'unsafe-inline'")
-            request.scope["csp"].append("style-src", "'unsafe-inline'")
-            return PlainTextResponse(content, status_code=status_code, media_type="text/html")
+        request.scope["csp"].append("script-src", "'unsafe-inline'")
+        request.scope["csp"].append("style-src", "'unsafe-inline'")
+        return default_response("error/nginx", request=request, status_code=status_code, count=False, render=False)
     elif status_code in range(500, 599):
-        if page := resolve_page("error/server"):
-            with Directories.public.joinpath(page).open("r") as f:
-                content = f.read()
-            request.scope["csp"].append("script-src", "'unsafe-inline'")
-            request.scope["csp"].append("style-src", "'unsafe-inline'")
-            return PlainTextResponse(content, status_code=status_code, media_type="text/html")
+        request.scope["csp"].append("script-src", "'unsafe-inline'")
+        request.scope["csp"].append("style-src", "'unsafe-inline'")
+        return default_response("error/server", request=request, status_code=status_code, count=False, render=False)
     else:
-        return render(
+        return default_response(
             "error/client",
             request=request,
             status_code=status_code,
