@@ -214,18 +214,13 @@ def render_error_page(request: Request, status_code: int = 500, message: str | N
         request.scope["csp"].append("font-src", "fonts.gstatic.com")
         return default_response("error/server", request=request, status_code=status_code, count=False, render=False)
     else:
-        return default_response(
-            "error/client",
-            request=request,
-            status_code=status_code,
-            count=False,
-            context={
-                "status_code": status_code,
-                "status_code_name": HTTPStatus(status_code).phrase,
-                "message": message or error_messages.get(status_code, {}).get("normal", "不明なエラーが発生しました。"),
-                "joke_message": joke_message or error_messages.get(status_code, {}).get("joke", "あんのーん")
-            }
-        )
+        context = {
+            "status_code": status_code,
+            "status_code_name": HTTPStatus(status_code).phrase,
+            "message": message or error_messages.get(status_code, {}).get("normal", "不明なエラーが発生しました。"),
+            "joke_message": joke_message or error_messages.get(status_code, {}).get("joke", "あんのーん")
+        }
+        return default_response("error/client", request=request, status_code=status_code, count=False, context=context)
 
 thumbnail_font_dir = Directories.public.joinpath("assets", "fonts")
 thumbnail_font_files = [
