@@ -217,6 +217,11 @@ class Middleware:
                 await self.app(scope, receive, send)
                 return
 
+            if scope.get("method") == "OPTIONS":
+                response = Response(status_code=204)
+                await self.send(response, scope, receive, send, timings)
+                return
+
             timings.start("recieve")
             body = await self.read_body(receive)
             timings.stop("recieve")
@@ -346,13 +351,25 @@ class Middleware:
 
         set_header("Cache-Control", "no-cache", override=False)
 
-        set_header("Access-Control-Allow-Origin", "*", override=False)
-        set_header("Access-Control-Allow-Methods", "*", override=False)
-        set_header("Access-Control-Allow-Headers", "*", override=False)
-
         set_header("Referrer-Policy", "strict-origin-when-cross-origin")
         set_header("Permissions-Policy", scope["pp"].header)
         set_header("Content-Security-Policy", scope["csp"].header)
+
+        headers = dict(scope.get("headers", []))
+        origin = headers.get(b"Origin", b"").decode().strip()
+        origin_host = origin.removeprefix("https://").removeprefix("http://").split("/")[0].split(":")[0]
+
+        if any(origin_host == candidate or origin_host.endswith("." + candidate) for candidate in Hostnames.all):
+            vary = response.headers.get("vary", "") + ", Origin" if "vary" in response.headers else "Origin"
+            set_header("Vary", vary)
+
+            set_header("Access-Control-Allow-Origin", origin, override=False)
+            set_header("Access-Control-Allow-Credentials", "true", override=False)
+
+            if scope.get("method") == "OPTIONS":
+                set_header("Access-Control-Allow-Methods", "GET, POST, HEAD, OPTIONS", override=False)
+                set_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With", override=False)
+                set_header("Access-Control-Max-Age", "86400", override=False)
 
         timings.stop("total")
         set_header("Server-Timing", timings.header)
