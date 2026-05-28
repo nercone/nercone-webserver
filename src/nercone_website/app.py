@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import PlainTextResponse, JSONResponse
 
-from .config import Repositories
+from .constants import Repositories
 from .renderer import default_response, render_error_page, render_thumbnail_png
 from .middleware import Middleware
 from .templates import get_daily_quote, access_counter

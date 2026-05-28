@@ -4,8 +4,9 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from fastapi.templating import Jinja2Templates
 
-from .config import Directories, Files, Repositories, Hostnames
-from .database import AccessCounter
+from .resolver import resolve_file
+from .constants import Directories, Files, Repositories, Hostnames
+from .databases import AccessCounter
 
 access_counter = AccessCounter()
 
@@ -24,9 +25,9 @@ def this_year_in_heisei() -> int: # heysay is not ended.
 templates.env.globals["this_year_in_heisei"] = this_year_in_heisei
 
 def get_daily_quote() -> str:
-    if Files.quotes.is_file():
+    if file := resolve_file("quotes.txt"):
         seed = str(datetime.now(timezone.utc).date())
-        with Files.quotes.open("r") as f:
+        with file.open("r") as f:
             quotes = f.read().strip().split("\n")
         return random.Random(seed).choice(quotes)
     else:

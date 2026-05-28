@@ -1,20 +1,19 @@
 import io
 import re
-import json
 import yaml
 import hashlib
 import mistune
 import resvg_py
 from typing import Any
 from html import escape
-from pathlib import Path
 from http import HTTPStatus
 from bs4 import BeautifulSoup
 from markitdown import MarkItDown
 from fastapi import Request, Response
 from fastapi.responses import PlainTextResponse, FileResponse, RedirectResponse
 
-from .config import Directories, Files
+from .resolver import resolve_file, resolve_page, resolve_shorturl
+from .constants import Directories
 from .templates import templates, access_counter
 
 class CustomHTMLRenderer(mistune.HTMLRenderer):
@@ -38,64 +37,8 @@ class CustomHTMLRenderer(mistune.HTMLRenderer):
 markitdown = MarkItDown()
 htmlitdown = mistune.create_markdown(renderer=CustomHTMLRenderer(escape=False), plugins=["table", "strikethrough", "task_lists", "footnotes"])
 
-def resolve_file(path: str) -> Path | None:
-    full_path = Directories.public.joinpath(path.lstrip("/")).resolve()
-    if not full_path.is_relative_to(Directories.public):
-        raise PermissionError()
-    return full_path if full_path.is_file() else None
-
-def resolve_page(path: str, markdown_mode: bool = False) -> str | None:
-    if path in ["", "/"]:
-        template_candidates = ["index.html", "README.html"]
-        markdown_candidates = ["index.md",   "README.md"]
-    elif path.endswith(".html"):
-        template_candidates = [f"{path[:-5].strip('/')}.html", f"{path[:-5].strip('/')}/index.html", f"{path[:-5].strip('/')}/README.html"]
-        markdown_candidates = [f"{path[:-5].strip('/')}.md",   f"{path[:-5].strip('/')}/index.md",   f"{path[:-5].strip('/')}/README.md"]
-    elif path.endswith(".md"):
-        template_candidates = [f"{path[:-3].strip('/')}.html", f"{path[:-3].strip('/')}/index.html", f"{path[:-3].strip('/')}/README.html"]
-        markdown_candidates = [f"{path[:-3].strip('/')}.md",   f"{path[:-3].strip('/')}/index.md",   f"{path[:-3].strip('/')}/README.md"]
-    else:
-        template_candidates = [f"{path.strip('/')}.html", f"{path.strip('/')}/index.html", f"{path.strip('/')}/README.html"]
-        markdown_candidates = [f"{path.strip('/')}.md",   f"{path.strip('/')}/index.md",   f"{path.strip('/')}/README.md"]
-
-    if markdown_mode:
-        candidates = markdown_candidates + template_candidates 
-    else:
-        candidates = template_candidates + markdown_candidates
-
-    for candidate in candidates:
-        if file := resolve_file(candidate):
-            return str(file.relative_to(Directories.public))
-
-    return None
-
-def resolve_shorturl(path: str) -> str | None:
-    max_retry = 10
-
-    if Files.shorturls.is_file():
-        with Files.shorturls.open("r", encoding="utf-8") as f:
-            shorturls = json.load(f)
-
-        current = path.strip("/")
-        visited = set()
-
-        for _ in range(max_retry):
-            if current in visited or current not in shorturls:
-                return None
-            visited.add(current)
-
-            entry = shorturls[current]
-            if entry["type"] == "redirect":
-                return entry["content"]
-            elif entry["type"] == "alias":
-                current = entry["content"]
-
-    return None
-
 def default_response(path: str, request: Request, status_code: int = 200, count: bool = True, render: bool = True, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
-    context["id"] = request.scope["id"]
-    context["trusted"] = request.scope["trusted"]
-    context["options"] = request.scope["options"]
+    context.update(request.scope)
 
     markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
     markdown_mode = any([path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])])

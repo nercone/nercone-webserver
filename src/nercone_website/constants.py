@@ -8,11 +8,10 @@ class Directories:
     databases = base.joinpath("databases")
 
 class Files:
-    quotes = Directories.public.joinpath("quotes.txt")
-    shorturls = Directories.public.joinpath("shorturls.json")
     access_counter = Directories.databases.joinpath("access_counter.txt")
 
     class Logs:
+        access = Directories.logs.joinpath("access.log")
         error = Directories.logs.joinpath("error.log")
 
 class Repositories:

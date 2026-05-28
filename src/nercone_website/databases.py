@@ -1,5 +1,5 @@
 import fcntl
-from .config import Files
+from .constants import Files
 
 class AccessCounter:
     def __init__(self):
