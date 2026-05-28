@@ -12,7 +12,7 @@ def resolve_file(path: str) -> Path | None:
 
 def resolve_page(path: str, markdown_mode: bool = False, timings: TimingManager | None = None) -> str | None:
     if timings:
-        timings.start("resolve")
+        timings.start("resolve-page")
 
     if path in ["", "/"]:
         template_candidates = ["index.html", "README.html"]
@@ -34,17 +34,17 @@ def resolve_page(path: str, markdown_mode: bool = False, timings: TimingManager 
 
     for candidate in candidates:
         if file := resolve_file(candidate):
-            timings.stop("resolve")
+            timings.stop("resolve-page")
             return str(file.relative_to(Directories.public))
 
     if timings:
-        timings.stop("resolve")
+        timings.stop("resolve-page")
 
     return None
 
 def resolve_shorturl(path: str, timings: TimingManager | None = None) -> str | None:
     if timings:
-        timings.start("resolve")
+        timings.start("resolve-shorturl")
 
     max_retry = 10
 
@@ -57,19 +57,19 @@ def resolve_shorturl(path: str, timings: TimingManager | None = None) -> str | N
 
         for _ in range(max_retry):
             if current in visited or current not in shorturls:
-                timings.stop("resolve")
+                timings.stop("resolve-shorturl")
                 return None
 
             visited.add(current)
 
             entry = shorturls[current]
             if entry["type"] == "redirect":
-                timings.stop("resolve")
+                timings.stop("resolve-shorturl")
                 return entry["content"]
             elif entry["type"] == "alias":
                 current = entry["content"]
 
     if timings:
-        timings.stop("resolve")
+        timings.stop("resolve-shorturl")
 
     return None
