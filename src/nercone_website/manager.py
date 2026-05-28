@@ -128,7 +128,7 @@ class NetworkManager:
 
     @property
     def trusted(self) -> bool:
-        any([self.address in network for network in self.trusted_networks])
+        return any([self.address in network for network in self.trusted_networks])
 
 class OptionManager:
     defaults = {
