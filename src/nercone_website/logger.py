@@ -29,7 +29,7 @@ class Logger:
                 "network": {"trusted": request.scope["network"].trusted}
             }
         }
-        Logger.log(json.dumps(log), path=Files.Logs.access)
+        Logger.log(json.dumps(log) + "\n", path=Files.Logs.access)
 
     @staticmethod
     def log_error(id: str, traceback: str):
