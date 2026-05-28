@@ -17,6 +17,7 @@ class Logger:
         log = {
             "id": request.scope["id"].text,
             "status": response.status_code,
+            "method": request.method,
             "headers": {
                 "request": dict(request.headers),
                 "response": dict(response.headers)
