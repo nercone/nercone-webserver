@@ -1,5 +1,7 @@
 import json
 from pathlib import Path
+
+from .manager import TimingManager
 from .constants import Directories
 
 def resolve_file(path: str) -> Path | None:
@@ -8,7 +10,10 @@ def resolve_file(path: str) -> Path | None:
         raise PermissionError()
     return full_path if full_path.is_file() else None
 
-def resolve_page(path: str, markdown_mode: bool = False) -> str | None:
+def resolve_page(path: str, markdown_mode: bool = False, timings: TimingManager | None = None) -> str | None:
+    if timings:
+        timings.start("resolve")
+
     if path in ["", "/"]:
         template_candidates = ["index.html", "README.html"]
         markdown_candidates = ["index.md",   "README.md"]
@@ -29,11 +34,18 @@ def resolve_page(path: str, markdown_mode: bool = False) -> str | None:
 
     for candidate in candidates:
         if file := resolve_file(candidate):
+            timings.stop("resolve")
             return str(file.relative_to(Directories.public))
+
+    if timings:
+        timings.stop("resolve")
 
     return None
 
-def resolve_shorturl(path: str) -> str | None:
+def resolve_shorturl(path: str, timings: TimingManager | None = None) -> str | None:
+    if timings:
+        timings.start("resolve")
+
     max_retry = 10
 
     if file := resolve_file("shorturls.json"):
@@ -45,14 +57,19 @@ def resolve_shorturl(path: str) -> str | None:
 
         for _ in range(max_retry):
             if current in visited or current not in shorturls:
+                timings.stop("resolve")
                 return None
 
             visited.add(current)
 
             entry = shorturls[current]
             if entry["type"] == "redirect":
+                timings.stop("resolve")
                 return entry["content"]
             elif entry["type"] == "alias":
                 current = entry["content"]
+
+    if timings:
+        timings.stop("resolve")
 
     return None

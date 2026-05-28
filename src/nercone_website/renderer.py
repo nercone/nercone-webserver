@@ -12,6 +12,7 @@ from markitdown import MarkItDown
 from fastapi import Request, Response
 from fastapi.responses import PlainTextResponse, FileResponse, RedirectResponse
 
+from .manager import TimingManager
 from .resolver import resolve_file, resolve_page, resolve_shorturl
 from .constants import Directories
 from .templates import templates, access_counter
@@ -40,15 +41,19 @@ htmlitdown = mistune.create_markdown(renderer=CustomHTMLRenderer(escape=False), 
 def default_response(path: str, request: Request, status_code: int = 200, count: bool = True, render: bool = True, context: dict[str, Any] = {}, headers: dict[str, str] = {}):
     context.update(request.scope)
 
+    timings: TimingManager = request.scope["timings"]
+
     markdown_ua = ["curl", "claude-user", "chatgpt-user", "google-extended", "perplexity-user"]
     markdown_mode = any([path.endswith(".md"), "text/markdown" in request.headers.get("accept", "").lower(), any([ua in request.headers.get("user-agent", "").lower() for ua in markdown_ua])])
 
     try:
-        if page := resolve_page(path, markdown_mode=markdown_mode):
+        if page := resolve_page(path, markdown_mode=markdown_mode, timings=timings):
             with Directories.public.joinpath(page).open("r") as f:
                 source = f.read()
 
             if render:
+                timings.start("render")
+
                 if not source.startswith("---"):
                     front = {}
                     body = source
@@ -77,11 +82,18 @@ def default_response(path: str, request: Request, status_code: int = 200, count:
                 content = templates.env.from_string(source).render(request=request, **context)
                 response = PlainTextResponse(content, status_code=status_code, media_type="text/html")
 
+                timings.stop("render")
+
                 if markdown_mode:
+                    timings.start("convert")
+
                     soup = BeautifulSoup(content, "html.parser")
                     main = str(soup.find("main")) if soup.find("main") else content
                     content = markitdown.convert_stream(io.BytesIO(main.encode("utf-8")), file_extension=".html").text_content
                     response = PlainTextResponse(content, status_code=status_code, media_type="text/markdown")
+
+                    timings.stop("convert")
+
             else:
                 content = source
                 if page.endswith(".html"):
@@ -89,7 +101,10 @@ def default_response(path: str, request: Request, status_code: int = 200, count:
                 elif page.endswith(".md"):
                     response = PlainTextResponse(content, status_code=status_code, media_type="text/markdown")
 
+            timings.start("etag")
             etag = '"' + hashlib.sha256(content.encode("utf-8")).hexdigest() + '"'
+            timings.stop("etag")
+
             if request.headers.get("if-none-match") == etag:
                 response = Response(status_code=304, headers={"ETag": etag})
             else:
@@ -99,13 +114,16 @@ def default_response(path: str, request: Request, status_code: int = 200, count:
                 access_counter.increase()
 
         elif file := resolve_file(path):
+            timings.start("etag")
             etag = '"' + hashlib.sha256(file.read_bytes()).hexdigest() + '"'
+            timings.stop("etag")
+
             if request.headers.get("if-none-match") == etag:
                 response = Response(status_code=304, headers={"ETag": etag})
             else:
                 response = FileResponse(file, status_code=status_code, headers={"ETag": etag})
 
-        elif url := resolve_shorturl(path):
+        elif url := resolve_shorturl(path, timings=timings):
             response = RedirectResponse(url, status_code=status_code if 299 < status_code < 400 else 307)
 
         else:
