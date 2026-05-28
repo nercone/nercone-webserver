@@ -356,7 +356,7 @@ class Middleware:
         set_header("Content-Security-Policy", scope["csp"].header)
 
         headers = dict(scope.get("headers", []))
-        origin = headers.get(b"Origin", b"").decode().strip()
+        origin = headers.get(b"origin", b"").decode().strip()
         origin_host = origin.removeprefix("https://").removeprefix("http://").split("/")[0].split(":")[0]
 
         if any(origin_host == candidate or origin_host.endswith("." + candidate) for candidate in Hostnames.all):
