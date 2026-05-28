@@ -11,6 +11,7 @@ class Files:
     access_counter = Directories.databases.joinpath("access_counter.txt")
 
     class Logs:
+        app = Directories.logs.joinpath("app.log")
         access = Directories.logs.joinpath("access.log")
         error = Directories.logs.joinpath("error.log")
 

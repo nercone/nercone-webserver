@@ -14,7 +14,7 @@ from scour import scour
 from .logger import Logger
 from .manager import PPManager, CSPManager, TimingManager, NetworkManager, OptionManager
 from .renderer import render_error_page
-from .constants import Files, Repositories, Hostnames
+from .constants import Repositories, Hostnames
 
 class Middleware:
     def __init__(self, app: ASGIApp):
@@ -88,9 +88,7 @@ class Middleware:
 
         except Exception:
             try:
-                id = scope["id"].text if "id" in scope else "NOTSET"
-                Logger.log(f"[{id}]\n{traceback.format_exc()}\n", path=Files.Logs.error)
-
+                Logger.log_error(scope.get("id", FourWord()).text, traceback.format_exc())
                 return render_error_page(Request(scope=scope, receive=receive), status_code=500)
             except Exception:
                 return PlainTextResponse("Internal Server Error", status_code=500)
@@ -209,4 +207,5 @@ class Middleware:
         scope["timings"].stop("total")
         set_header("Server-Timing", scope["timings"].header)
 
+        Logger.log_access(request=Request(scope=scope, receive=receive), response=response)
         await response(scope, receive, send)

@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from fastapi.templating import Jinja2Templates
 
 from .resolver import resolve_file
-from .constants import Directories, Files, Repositories, Hostnames
+from .constants import Directories, Repositories, Hostnames
 from .databases import AccessCounter
 
 access_counter = AccessCounter()
