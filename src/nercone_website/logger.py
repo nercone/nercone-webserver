@@ -16,6 +16,7 @@ class Logger:
     def log_access(request: Request, response: Response):
         log = {
             "id": request.scope["id"].text,
+            "url": request.url,
             "status": response.status_code,
             "method": request.method,
             "headers": {
