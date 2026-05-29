@@ -7,6 +7,7 @@ from fastapi import Request, Response
 from .constants import Files
 
 logger = logging.getLogger("website")
+logging.basicConfig(filename=str(Files.Logs.app), level=logging.INFO)
 
 class Logger:
     @staticmethod
