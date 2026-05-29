@@ -188,7 +188,7 @@ class Middleware:
         set_header("Permissions-Policy", scope["pp"].header)
         set_header("Content-Security-Policy", scope["csp"].header)
 
-        if content_type.startswith(["font/", "image/", "text/css", "text/javascript", "application/javascript"]):
+        if content_type.startswith(("font/", "image/", "text/css", "text/javascript", "application/javascript")):
             set_header("Access-Control-Allow-Origin", "*", override=False)
 
         else:
