@@ -11,6 +11,7 @@ class Directories:
     databases = base.joinpath("databases")
 
 class Files:
+    mime_types = Directories.databases.joinpath("mime.types")
     access_counter = Directories.databases.joinpath("access_counter.txt")
 
     class Logs:

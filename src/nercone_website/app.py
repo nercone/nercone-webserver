@@ -1,10 +1,13 @@
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import PlainTextResponse, JSONResponse
 
+from .databases import MimeTypes
 from .constants import Repositories
 from .renderer import default_response, render_error_page, render_thumbnail_png
 from .middleware import Middleware
 from .templates import get_daily_quote, access_counter
+
+MimeTypes.load()
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 app.add_middleware(Middleware)
