@@ -110,7 +110,6 @@ class TimingManager:
 
 class NetworkManager:
     trusted_networks = [ipaddress.ip_network(network) for network in [
-        "127.0.0.0/8",
         "169.254.0.0/16",
 
         "10.0.0.0/8",
