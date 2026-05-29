@@ -36,9 +36,9 @@ class Logger:
             }
         }
         Logger.log(json.dumps(log) + "\n", path=Files.Logs.access)
-        Logger.log(f"[{request.scope['id'].compact_text}] STATUS {response.status_code} FROM {request.client.host}:{request.client.port} TO {str(request.url)}")
+        Logger.log(f"[{request.scope['id'].compact_text}] STATUS {response.status_code} FROM {request.client.host}:{request.client.port} TO {str(request.url)}\n")
 
     @staticmethod
     def log_error(id: str, traceback: str):
         Logger.log(f"[{id}]\n{traceback}\n", path=Files.Logs.error)
-        Logger.log(f"[{id}] STATUS 500")
+        Logger.log(f"[{id}] STATUS 500\n")
