@@ -2,6 +2,7 @@ import time
 import ipaddress
 from fastapi import Response
 from starlette.requests import Request, HTTPConnection
+from .constants import reserved_cookie_keys
 
 class PPManager:
     defaults = {
@@ -157,5 +158,7 @@ class OptionManager:
         queries = self.request.query_params
         cookies = self.request.cookies
         for key in queries:
+            if key.lower() in reserved_cookie_keys:
+                continue
             if not key.endswith(".once") and cookies.get(key) != queries.get(key) or self.defaults.get(key) != (queries[key] or cookies[key]):
                 response.set_cookie(key, queries[key], samesite="lax")

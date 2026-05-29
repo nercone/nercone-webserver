@@ -1,5 +1,8 @@
 import subprocess
+import http.cookies
 from pathlib import Path
+
+reserved_cookie_keys = frozenset(http.cookies.Morsel._reserved)
 
 class Directories:
     base = Path.cwd()
