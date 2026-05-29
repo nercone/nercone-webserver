@@ -1,9 +1,12 @@
 import json
 import fcntl
+import logging
 from pathlib import Path
 from fastapi import Request, Response
 
 from .constants import Files
+
+logger = logging.getLogger("website")
 
 class Logger:
     @staticmethod
@@ -19,6 +22,10 @@ class Logger:
             "url": str(request.url),
             "status": response.status_code,
             "method": request.method,
+            "client": {
+                "host": request.client.host,
+                "port": request.client.port
+            },
             "headers": {
                 "request": dict(request.headers),
                 "response": dict(response.headers)
@@ -31,7 +38,9 @@ class Logger:
             }
         }
         Logger.log(json.dumps(log) + "\n", path=Files.Logs.access)
+        logger.info(f"[{request.scope['id'].text}] STATUS {response.status_code} FROM {request.client.host}:{request.client.port} TO {str(request.url)}")
 
     @staticmethod
     def log_error(id: str, traceback: str):
         Logger.log(f"[{id}]\n{traceback}\n", path=Files.Logs.error)
+        logger.error(f"[{id}] STATUS 500")
