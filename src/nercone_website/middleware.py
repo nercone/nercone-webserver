@@ -45,7 +45,7 @@ class Middleware:
             else:
                 subdomain = ".".join(hostname.split(".")[:-2])
 
-            if not scope["network"].trusted and not any([hostname == candidate or hostname.endswith("." + candidate) for candidate in Hostnames.all]):
+            if not scope["network"].trusted and not any([hostname == candidate or hostname.endswith("." + candidate) for candidate in Hostnames.public]):
                 response = PlainTextResponse("許可されていないホスト名でのアクセスです。", status_code=403)
                 await self.send(response, scope, receive, send)
                 return
@@ -179,7 +179,7 @@ class Middleware:
         set_header("X-Request-Id", scope["id"].text)
 
         set_header("Server", f"nercone.dev ({Repositories.Server.version}+{Repositories.Contents.version})")
-        set_header("Onion-Location", f"http://{Hostnames.onion[0]}{scope.get("path", "/")}" + (f"?{scope.get("query_string", b"").decode()}" if scope.get("query_string", b"").decode() else ""))
+        set_header("Onion-Location", f"http://{Hostnames.tor[0]}{scope.get("path", "/")}" + (f"?{scope.get("query_string", b"").decode()}" if scope.get("query_string", b"").decode() else ""))
         set_header("Link", "<https://nercone.dev/sitemap.xml>; rel=\"sitemap\", <https://nercone.dev/robots.txt>; rel=\"robots\"")
 
         set_header("Cache-Control", "no-cache", override=False)
