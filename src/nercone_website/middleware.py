@@ -14,7 +14,7 @@ from scour import scour
 from .logger import Logger
 from .manager import PPManager, CSPManager, TimingManager, NetworkManager, OptionManager
 from .renderer import render_error_page
-from .constants import Repositories, Hostnames
+from .constants import Repositories, Hostnames, unix_socket
 
 class Middleware:
     def __init__(self, app: ASGIApp):
@@ -31,7 +31,11 @@ class Middleware:
                 "pp": PPManager(),
                 "csp": CSPManager(),
                 "timings": TimingManager(),
-                "network": NetworkManager(ipaddress.ip_address(client[0]) if (client := scope.get("client")) else None),
+                "network": NetworkManager(
+                    address = None if unix_socket else ipaddress.ip_address(scope["client"][0]),
+                    host = "UDS" if unix_socket else scope["client"][0],
+                    port = 0 if unix_socket else scope["client"][1]
+                ),
                 "options": OptionManager(HTTPConnection(scope=scope))
             })
 

@@ -21,8 +21,8 @@ class Logger:
             "status": response.status_code,
             "method": request.method,
             "client": {
-                "host": request.client.host,
-                "port": request.client.port
+                "host": request.scope["network"].host,
+                "port": request.scope["network"].port
             },
             "headers": {
                 "request": dict(request.headers),
@@ -36,7 +36,7 @@ class Logger:
             }
         }
         Logger.log(json.dumps(log), path=Files.Logs.access)
-        Logger.log(f"[{request.scope['id'].compact_text}] STATUS {response.status_code} FROM {request.client.host}:{request.client.port} TO {str(request.url)}")
+        Logger.log(f"[{request.scope['id'].compact_text}] STATUS {response.status_code} FROM {request.scope['network'].host}:{request.scope['network'].port} TO {str(request.url)}")
 
     @staticmethod
     def log_error(id: str, traceback: str):

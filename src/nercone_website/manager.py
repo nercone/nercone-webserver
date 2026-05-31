@@ -124,8 +124,10 @@ class NetworkManager:
         "fe80::/10"
     ]]
 
-    def __init__(self, address: ipaddress.IPv4Address | ipaddress.IPv6Address | None):
+    def __init__(self, address: ipaddress.IPv4Address | ipaddress.IPv6Address | None, host: str | None, port: int | None):
         self.address = address
+        self.host = host
+        self.port = port
 
     @property
     def trusted(self) -> bool:

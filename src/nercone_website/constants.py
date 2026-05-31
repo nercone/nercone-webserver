@@ -1,7 +1,9 @@
+import os
 import subprocess
 import http.cookies
 from pathlib import Path
 
+unix_socket = os.environ.get("WEBSITE_UDS")
 reserved_cookie_keys = frozenset(http.cookies.Morsel._reserved)
 
 class Directories:
