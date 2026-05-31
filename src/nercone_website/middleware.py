@@ -26,6 +26,8 @@ class Middleware:
                 await self.app(scope, receive, send)
                 return
 
+            headers = dict(scope.get("headers", []))
+
             scope.update({
                 "id": FourWord(),
                 "pp": PPManager(),
@@ -33,7 +35,7 @@ class Middleware:
                 "timings": TimingManager(),
                 "network": NetworkManager(
                     address = None if unix_socket else ipaddress.ip_address(scope["client"][0]),
-                    host = "UDS" if unix_socket else scope["client"][0],
+                    host = headers.get("x-real-ip", "UDS") if unix_socket else scope["client"][0],
                     port = 0 if unix_socket else scope["client"][1]
                 ),
                 "options": OptionManager(HTTPConnection(scope=scope))
@@ -41,9 +43,7 @@ class Middleware:
 
             scope["timings"].start("total")
 
-            headers = dict(scope.get("headers", []))
             hostname = headers.get(b"host", b"").decode().split(":")[0].strip()
-
             if hostname.split(".")[-1] == "localhost":
                 subdomain = ".".join(hostname.split(".")[:-1])
             else:
