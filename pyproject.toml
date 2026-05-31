@@ -26,8 +26,8 @@ dependencies = [
     "rjsmin",
     "scour",
 
-    "fourword",
-    "asyncpg"
+    "pyyaml",
+    "fourword"
 ]
 
 [project.scripts]
