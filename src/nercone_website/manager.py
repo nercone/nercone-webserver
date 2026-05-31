@@ -1,3 +1,4 @@
+import copy
 import time
 import ipaddress
 from fastapi import Response
@@ -18,7 +19,7 @@ class PPManager:
     }
 
     def __init__(self):
-        self.directives: dict[str, list[str]] = dict(self.defaults)
+        self.directives: dict[str, list[str]] = copy.deepcopy(self.defaults)
 
     def set(self, key: str, value: list[str], override: bool = True):
         if override or key not in self.directives:
@@ -60,7 +61,7 @@ class CSPManager:
     }
 
     def __init__(self):
-        self.directives: dict[str, list[str] | bool] = dict(self.defaults)
+        self.directives: dict[str, list[str] | bool] = copy.deepcopy(self.defaults)
 
     def set(self, key: str, value: list[str] | bool, override: bool = True):
         if override or key not in self.directives:
