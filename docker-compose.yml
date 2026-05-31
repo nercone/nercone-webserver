@@ -4,8 +4,11 @@ services:
     build: .
     network_mode: host
     restart: unless-stopped
+    environment:
+      WEBSITE_UDS: /run/website/app.sock
     volumes:
+      - "/run/website:/run/website"
       - "./.git:/srv/website/.git:ro"
-      - "./databases:/srv/website/databases"
       - "./logs:/srv/website/logs"
+      - "./databases:/srv/website/databases"
       - "./public:/srv/website/public:ro"

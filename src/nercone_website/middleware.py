@@ -31,7 +31,7 @@ class Middleware:
                 "pp": PPManager(),
                 "csp": CSPManager(),
                 "timings": TimingManager(),
-                "network": NetworkManager(ipaddress.ip_address(scope.get("client", ("", 0))[0])),
+                "network": NetworkManager(ipaddress.ip_address(client[0]) if (client := scope.get("client")) else None),
                 "options": OptionManager(HTTPConnection(scope=scope))
             })
 

@@ -110,6 +110,7 @@ class TimingManager:
 
 class NetworkManager:
     trusted_networks = [ipaddress.ip_network(network) for network in [
+        "127.0.0.0/8",
         "169.254.0.0/16",
 
         "10.0.0.0/8",
@@ -123,12 +124,14 @@ class NetworkManager:
         "fe80::/10"
     ]]
 
-    def __init__(self, address: ipaddress.IPv4Address | ipaddress.IPv6Address):
+    def __init__(self, address: ipaddress.IPv4Address | ipaddress.IPv6Address | None):
         self.address = address
 
     @property
     def trusted(self) -> bool:
-        return any([self.address in network for network in self.trusted_networks])
+        if self.address is None:
+            return False
+        return any(self.address in network for network in self.trusted_networks)
 
 class OptionManager:
     defaults = {
