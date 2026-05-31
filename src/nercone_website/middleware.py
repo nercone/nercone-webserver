@@ -35,7 +35,7 @@ class Middleware:
                 "timings": TimingManager(),
                 "network": NetworkManager(
                     address = None if unix_socket else ipaddress.ip_address(scope["client"][0]),
-                    host = headers.get(b"x-real-ip", b"UDS") if unix_socket else scope["client"][0],
+                    host = headers.get(b"x-real-ip", b"UDS").decode() if unix_socket else scope["client"][0],
                     port = 0 if unix_socket else scope["client"][1]
                 ),
                 "options": OptionManager(HTTPConnection(scope=scope))
