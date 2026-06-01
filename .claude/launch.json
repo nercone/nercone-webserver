@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "nercone-website",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "nercone-website"],
+      "port": 8080
+    }
+  ]
+}

@@ -394,3 +394,4 @@ Jinja2テンプレート内で利用可能なグローバル変数/関数:
 - 5XXエラーが発生した場合は`logs/error.log`にPythonのトレースバックが記録されます。リクエストIDでアクセスログと照合できます。
 - リクエストIDは[FourWord ID](https://github.com/nercone-dev/fourword/)形式が採用されており、テキスト形式に変換された後`X-Request-Id`レスポンスヘッダーとして返されます。`app.log`ファイルではある程度幅が狭いターミナルでも折り返しが発生しないよう、Compact Text形式が使用されています。 
 - `Server-Timing`ヘッダーで各処理段階の所要時間を確認できます。
+- `/assets/`内のCSS/JS等のファイルはassets.nercone.devから取得されるため、ローカルの変更は反映されません。
