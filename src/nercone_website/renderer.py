@@ -72,9 +72,12 @@ def default_response(path: str, request: Request, status_code: int = 200, count:
                     html = htmlitdown(templates.env.from_string(body).render(request=request, **context))
 
                 if "base" in front:
-                    source = f"{{% extends \"{front['base']}\" %}}\n"
+                    if front["base"].startswith("/"):
+                        source = f"{{% extends \"{front['base']}\" %}}\n"
+                    else:
+                        source = f"{{% extends \"/base/{front['base']}.html\" %}}\n"
                 else:
-                    source = "{% extends \"/base.html\" %}\n"
+                    source = "{% extends \"/base/normal.html\" %}\n"
                 for key, value in front.items():
                     source += f"{{% block {key} %}}{value}{{% endblock %}}\n"
                 source += f"{{% block main %}}\n{html}\n{{% endblock %}}\n"

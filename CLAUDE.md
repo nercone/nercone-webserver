@@ -119,7 +119,8 @@ https://github.com/nercone-dev/website-contents.git
 │   │   │   ├── daily-quote.css
 │   │   │   ├── index.css
 │   │   │   ├── links.css
-│   │   │   └── qr-code.css
+│   │   │   ├── qr-code.css
+│   │   │   └── sidebar.css
 │   │   ├── themes
 │   │   │   ├── dark.css
 │   │   │   └── light.css
@@ -140,7 +141,6 @@ https://github.com/nercone-dev/website-contents.git
 │   │   ├── cursor.js
 │   │   ├── view-transition.js
 │   │   ├── loading-overlay.js
-│   │   ├── sidebar.js
 │   │   └── class-prefix.js
 │   └── pgp
 │       ├── nenaicone.asc
@@ -156,8 +156,9 @@ https://github.com/nercone-dev/website-contents.git
 │   ├── html.html
 │   ├── markdown.md
 │   ├── font-size.md
+├── base                         # 基底テンプレート (Jinja2 extends)
+│   ├── normal.html
 │   └── sidebar.html
-├── base.html                    # 全ページの基底テンプレート (Jinja2 extends)
 ├── index.html
 ├── links.html
 ├── download-banner.md
@@ -312,8 +313,8 @@ HTMLファイルとMarkdownファイルの先頭に `---` で囲まれたYAML形
 
 ```yaml
 ---
-base: /base.html       # 継承するベーステンプレート (デフォルト: /base.html)
-title: ページタイトル   # base.html の title ブロックを上書き
+base: normal       # 継承するベーステンプレート (デフォルト: normal, /base/normal.html)
+title: ページタイトル   # テンプレートのtitleブロックを上書き
 description: 説明文    # その他のブロックも任意に指定可能
 ---
 ```
