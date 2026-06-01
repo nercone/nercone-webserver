@@ -392,6 +392,6 @@ Jinja2テンプレート内で利用可能なグローバル変数/関数:
 - `/status`エンドポイントのレスポンスには起動時に`git rev-parse --short HEAD`で取得した`website`/`website-contents`のコミットハッシュを含むため、更新後に変更が正しく反映されているか確認できます。
 - アクセスログは`logs/access.log`にJSONL形式で記録されます。ログエントリには `id`/`url`/`status`/`method`/`client`/`headers`/`managers`(pp/csp/timings/network)が含まれます。
 - 5XXエラーが発生した場合は`logs/error.log`にPythonのトレースバックが記録されます。リクエストIDでアクセスログと照合できます。
-- リクエストIDは[FourWord ID](https://github.com/nercone-dev/fourword/)形式が採用されており、テキスト形式に変換された後`X-Request-Id`レスポンスヘッダーとして返されます。`app.log`ファイルではある程度幅が狭いターミナルでも折り返しが発生しないよう、Compact Text形式が使用されています。 
+- リクエストIDは[FourWord ID](https://github.com/nercone-dev/fourword/)のText形式が採用されており、テキスト形式に変換された後`X-Request-Id`レスポンスヘッダーとして返されます。幅が少し狭いターミナルでも折り返しが発生しないよう、`app.log`ファイルではCompact Text形式が採用されています。 
 - `Server-Timing`ヘッダーで各処理段階の所要時間を確認できます。
-- `/assets/`内のCSS/JS等のファイルはassets.nercone.devから取得されるため、ローカルの変更は反映されません。
+- `/assets/`内のCSS/JS等のファイルはassets.nercone.devから取得されるため、ローカルの変更は反映されません。プレビュー機能などを使用する場合は、JavaScriptを実行するなどして手動で変更を反映させる必要があります。
