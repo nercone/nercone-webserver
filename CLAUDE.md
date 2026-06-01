@@ -135,7 +135,8 @@ https://github.com/nercone-dev/website-contents.git
 │   │   └── loading-overlay.css
 │   ├── js
 │   │   ├── pages
-│   │   │   └── index.js
+│   │   │   ├── index.js
+│   │   │   └── sidebar.js
 │   │   ├── main.js
 │   │   ├── components.js
 │   │   ├── cursor.js
